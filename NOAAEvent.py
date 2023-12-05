@@ -1,6 +1,10 @@
 #Lauren Eckert
 #NJSESP Project for Junior Clinic
 
+#Libraries
+
+#imports from other package files
+
 #NOAA events class
 class NOAAEvent:
     def __init__(self, event_id, cz_name_str, begin_location, begin_date, begin_time, event_type, magnitude, tor_f_scale, deaths_direct,
@@ -48,3 +52,30 @@ class NOAAEvent:
         self.absolute_rownumber = absolute_rownumber
         self.filename = filename
         self.line_number = line_number       
+
+def get_unique_noaa_regions(hurricanes):
+    unique_regions = set()
+    for hurricane in hurricanes:
+        for noaa_event in hurricane.noaa_events:
+            # Ensure that cz_name_str is a string before stripping
+            if isinstance(noaa_event.cz_name_str, str):
+                unique_regions.add(noaa_event.cz_name_str.strip())
+            else:
+                # Handle non-string cz_name_str (convert to string or handle differently)
+                unique_regions.add(str(noaa_event.cz_name_str))
+    return unique_regions
+
+def count_noaa_events_missing_cz_name(hurricanes):
+    count = 0
+    for hurricane in hurricanes:
+        for event in hurricane.noaa_events:
+            # Check if cz_name_str is empty or None
+            if not event.cz_name_str or (isinstance(event.cz_name_str, str) and event.cz_name_str.strip() == ""):
+                count += 1
+    return count
+
+def print_specific_noaa_events(hurricanes, cz_name_str_values):
+    for hurricane in hurricanes:
+        for event in hurricane.noaa_events:
+            if str(event.cz_name_str) in cz_name_str_values:
+                print(f"File: {event.filename}, Line: {event.line_number}, Event ID: {event.event_id}, CZ Name: {event.cz_name_str}")

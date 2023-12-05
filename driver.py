@@ -10,8 +10,13 @@ from datetime import datetime
 
 from hurricanes import Hurricane 
 from NOAAEvent import NOAAEvent
-import driverFunctions as df
-from driverFunctions import noaa_to_eaglei_mapping
+from EagleIEvent import EagleIEvent
+from EagleIEvent import noaa_to_eaglei_mapping
+import hurricanes as hu
+import NOAAEvent as noa
+import EagleIEvent as eie
+import utilities as uti
+import data_processing as dp
 
 
 # File paths
@@ -25,7 +30,7 @@ if not os.path.exists(pickle_directory):
 # Load or create hurricane objects
 hurricane_pickle_path = os.path.join(pickle_directory, 'hurricane_objects.pkl')
 if not os.path.exists(hurricane_pickle_path):
-    hurricanes = df.create_hurricanes_from_excel(hurricanes_excel_file_path)
+    hurricanes = dp.create_hurricanes_from_excel(hurricanes_excel_file_path)
     with open(hurricane_pickle_path, 'wb') as f:
         pickle.dump(hurricanes, f)
     print("Hurricane objects have been saved to a pickle file.")
@@ -47,9 +52,9 @@ if not os.path.exists(noaa_pickle_path):
             parts = filename.replace("_storm_data_search_results.csv", "").split('_')
             storm_name = parts[0]
             storm_occurrence = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 1
-            hurricane = df.find_hurricane_by_name_and_occurrence(hurricanes, storm_name, storm_occurrence)
+            hurricane = hu.find_hurricane_by_name_and_occurrence(hurricanes, storm_name, storm_occurrence)
             if hurricane:
-                df.add_noaa_events_for_hurricane(noaa_file_path, hurricane)
+                dp.add_noaa_events_for_hurricane(noaa_file_path, hurricane)
                 all_noaa_events[(hurricane.storm_name, hurricane.occurrence)] = hurricane.noaa_events
     with open(noaa_pickle_path, 'wb') as f:
         pickle.dump(all_noaa_events, f)
@@ -68,7 +73,7 @@ eagle_i_directory = r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\Junio
 eagle_i_pickle_path = os.path.join(pickle_directory, 'eagle_i_events.pkl')
 
 if not os.path.exists(eagle_i_pickle_path):
-    eagle_i_events = df.extract_eagle_i_events(eagle_i_directory)
+    eagle_i_events = dp.extract_eagle_i_events(eagle_i_directory)
     with open(eagle_i_pickle_path, 'wb') as f:
         pickle.dump(eagle_i_events, f)
     print("Eagle I events have been saved to a pickle file.")
@@ -78,16 +83,22 @@ else:
     print("Eagle I events have been loaded from the pickle file.")
 
 # Call the function with your data
-df.print_data_samples(hurricanes, eagle_i_events)
+dp.print_data_samples(hurricanes, eagle_i_events)
 
-# Call the link_eaglei_to_noaa function with the region mapping
-df.link_eaglei_to_noaa(hurricanes, eagle_i_events, noaa_to_eaglei_mapping)
+# Flag to control processing of Eagle I events and updating hurricanes
+process_eaglei_events = False  # Set to False to skip this process
 
-# Path to the hurricane objects pickle file
-hurricane_pickle_path = r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\hurricane_objects.pkl"
+if process_eaglei_events:
+    # Call the link_eaglei_to_noaa function with the region mapping
+    dp.link_eaglei_to_noaa(hurricanes, eagle_i_events, noaa_to_eaglei_mapping)
 
-# Open the file in write-binary mode and overwrite with updated hurricane objects
-with open(hurricane_pickle_path, 'wb') as f:
-    pickle.dump(hurricanes, f)
+    # Path to the hurricane objects pickle file
+    hurricane_pickle_path = r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\hurricane_objects.pkl"
 
-print("Updated hurricane objects have been saved back to the pickle file.")
+    # Save the updated hurricane objects to a pickle file
+    uti.save_to_pickle(hurricanes, hurricane_pickle_path)
+
+    print("Updated hurricane objects have been saved back to the pickle file.")
+else:
+    print("Processing of Eagle I events and updating of hurricane objects is skipped.")
+
