@@ -15,8 +15,8 @@ from driverFunctions import noaa_to_eaglei_mapping
 
 
 # File paths
-hurricanes_excel_file_path = r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\hurricanes\HurricaneDataProcessingProgram\excelInfo\hurricanes.xlsx"
-pickle_directory = r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\hurricanes\HurricaneDataProcessingProgram\pickles"
+hurricanes_excel_file_path = r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\excelInfo\hurricanes.xlsx"
+pickle_directory = r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles"
 
 # Ensure the pickle directory exists
 if not os.path.exists(pickle_directory):
@@ -35,7 +35,7 @@ else:
     print("Hurricane objects have been loaded from the pickle file.")
 
 # Process NOAA events
-noaa_files_directory = r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\hurricanes\HurricaneDataProcessingProgram\excelInfo\storm info"
+noaa_files_directory = r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\excelInfo\storm info"
 noaa_pickle_path = os.path.join(pickle_directory, 'all_noaa_events.pkl')
 
 if not os.path.exists(noaa_pickle_path):
@@ -64,7 +64,7 @@ else:
     print("All NOAA events have been loaded from the pickle file.")
 
 # Add Eagle I events
-eagle_i_directory = r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\hurricanes\HurricaneDataProcessingProgram\excelInfo\eaglei_outages"
+eagle_i_directory = r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\excelInfo\eaglei_outages"
 eagle_i_pickle_path = os.path.join(pickle_directory, 'eagle_i_events.pkl')
 
 if not os.path.exists(eagle_i_pickle_path):
@@ -84,7 +84,7 @@ df.print_data_samples(hurricanes, eagle_i_events)
 df.link_eaglei_to_noaa(hurricanes, eagle_i_events, noaa_to_eaglei_mapping)
 
 # Path to the hurricane objects pickle file
-hurricane_pickle_path = r"c:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\hurricanes\HurricaneDataProcessingProgram\pickles\hurricane_objects.pkl"
+hurricane_pickle_path = r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\hurricane_objects.pkl"
 
 # Open the file in write-binary mode and overwrite with updated hurricane objects
 with open(hurricane_pickle_path, 'wb') as f:
