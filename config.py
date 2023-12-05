@@ -1,3 +1,5 @@
+#config.py
+
 # File paths configuration
 config = {
     'hurricanes_excel_file_path': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\excelInfo\hurricanes.xlsx",

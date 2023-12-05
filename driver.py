@@ -6,6 +6,7 @@ import os
 import pickle
 import data_processing as dp
 import utilities as uti
+import data_analysis as da
 
 from EagleIEvent import noaa_to_eaglei_mapping
 from config import config
@@ -40,3 +41,10 @@ if process_eaglei_events:
     print("Updated hurricane objects have been saved back to the pickle file.")
 else:
     print("Processing of Eagle I events and updating of hurricane objects is skipped.")
+
+file_path = 'C:/Users/laure/Documents/terminal_output.txt'
+with uti.redirect_stdout_to_file(file_path):
+    # All print statements inside this block will be redirected to the specified file
+    print("Hurricane Data Summaries")
+    da.print_hurricane_summaries(hurricanes)
+    # Add your function calls or any other code that produces terminal output here
