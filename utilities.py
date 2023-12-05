@@ -6,11 +6,6 @@
 from datetime import datetime
 import pickle
 
-#imports from other package files
-from hurricanes import Hurricane 
-from NOAAEvent import NOAAEvent
-from EagleIEvent import EagleIEvent
-
 def parse_date_time(date_str, time_str):
     # Combine date and time into a single datetime object
     datetime_str = f"{date_str} {time_str}"
@@ -30,3 +25,7 @@ def save_to_pickle(obj, file_path):
         print(f"Object successfully saved to {file_path}")
     except Exception as e:
         print(f"Error saving object to pickle: {e}")
+
+def load_pickle(file_path):
+    with open(file_path, 'rb') as file:
+        return pickle.load(file)

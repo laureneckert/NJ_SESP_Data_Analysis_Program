@@ -13,11 +13,13 @@
 import pandas as pd
 import os
 from datetime import datetime
+import pickle
 
 #imports from other package files
 from hurricanes import Hurricane 
 from NOAAEvent import NOAAEvent
-from EagleIEvent import EagleIEvent
+import utilities as uti
+from config import config
 
 #Create hurricane objects & add data
 def create_hurricanes_from_excel(file_path):
@@ -112,6 +114,28 @@ def add_noaa_events_for_hurricane(file_path, hurricane):
         hurricane.add_noaa_event(noaa_event)
     print(f"Completed adding NOAA events to hurricane {hurricane.storm_name}")
 
+def process_noaa_events(hurricane_list, noaa_directory):
+    all_noaa_events = {}
+
+    for filename in os.listdir(noaa_directory):
+        if filename.endswith("_storm_data_search_results.csv"):
+            print(f"Processing file: {filename}")
+            noaa_file_path = os.path.join(noaa_directory, filename)
+            
+            # Extract storm name and occurrence from filename
+            parts = filename.replace("_storm_data_search_results.csv", "").split('_')
+            storm_name = parts[0]
+            storm_occurrence = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 1
+            
+            # Find the corresponding hurricane
+            hurricane = next((h for h in hurricane_list if h.storm_name == storm_name and h.occurrence == storm_occurrence), None)
+            
+            if hurricane:
+                add_noaa_events_for_hurricane(noaa_file_path, hurricane)
+                all_noaa_events[(hurricane.storm_name, hurricane.occurrence)] = hurricane.noaa_events
+    
+    return all_noaa_events
+
 def extract_eagle_i_events(eagle_i_directory):
     # Initialize a list to store events outside of the for loop
     events = []
@@ -188,4 +212,58 @@ def link_eaglei_to_noaa(hurricanes, eagle_i_events, region_mapping):
                             hurricane.add_eaglei_event(eagle_i_event)
                             print(f"Added Eagle I event from {eagle_i_event['county']} on {eagle_i_event['run_start_time']} to Hurricane {hurricane.storm_name}")
             #else:
-                #print(f"No matching region found for NOAA Event ID: {noaa_event.event_id} in Hurricane {hurricane.storm_name}")    
+                #print(f"No matching region found for NOAA Event ID: {noaa_event.event_id} in Hurricane {hurricane.storm_name}")   
+
+def load_or_create_hurricanes(hurricanes_excel_file_path, pickle_directory):
+    hurricane_pickle_path = os.path.join(pickle_directory, 'hurricane_objects.pkl')
+    if not os.path.exists(hurricane_pickle_path):
+        hurricanes = create_hurricanes_from_excel(hurricanes_excel_file_path)
+        uti.save_to_pickle(hurricanes, hurricane_pickle_path)
+        print("Hurricane objects have been saved to a pickle file.")
+    else:
+        hurricanes = uti.load_pickle(hurricane_pickle_path)
+        print("Hurricane objects have been loaded from the pickle file.")
+    return hurricanes
+
+def load_or_add_noaa_events(hurricane_list, noaa_directory, pickle_path):
+    # Check if the pickle file exists
+    if os.path.exists(pickle_path):
+        # Load NOAA events from the pickle file
+        with open(pickle_path, 'rb') as f:
+            all_noaa_events = pickle.load(f)
+        # Update each hurricane object with its corresponding NOAA events
+        for hurricane in hurricane_list:
+            key = (hurricane.storm_name, hurricane.occurrence)
+            if key in all_noaa_events:
+                hurricane.noaa_events = all_noaa_events[key]
+        print("NOAA events have been loaded from the existing pickle file.")
+    else:
+        # Process NOAA events and save to a new pickle file
+        all_noaa_events = process_noaa_events(hurricane_list, noaa_directory)
+        with open(pickle_path, 'wb') as f:
+            pickle.dump(all_noaa_events, f)
+        print("NOAA events have been processed and saved to a new pickle file.")
+
+def load_or_add_eagle_i_events(eagle_i_directory, pickle_path):
+    """
+    Loads Eagle I events from a pickle file or processes and adds them if the pickle file does not exist.
+
+    Parameters:
+    eagle_i_directory (str): Directory containing Eagle I event Excel files.
+    pickle_path (str): Path to the pickle file for storing Eagle I events.
+    """
+    # Check if the pickle file exists
+    if os.path.exists(pickle_path):
+        # Load Eagle I events from the pickle file
+        with open(pickle_path, 'rb') as f:
+            eagle_i_events = pickle.load(f)
+        print("Eagle I events have been loaded from the pickle file.")
+    else:
+        # Process Eagle I events and save to a new pickle file
+        eagle_i_events = extract_eagle_i_events(eagle_i_directory)
+        with open(pickle_path, 'wb') as f:
+            pickle.dump(eagle_i_events, f)
+        print("Eagle I events have been processed and saved to a new pickle file.")
+    
+    return eagle_i_events
+ 

@@ -4,8 +4,6 @@
 #Libraries
 import pandas as pd
 
-#imports from other package files
-
 #Eagle I events class
 class EagleIEvent:
     def __init__(self, fips_code, county, state, sum, run_start_time):

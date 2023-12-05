@@ -1,10 +1,6 @@
 #Lauren Eckert
 #NJSESP Project for Junior Clinic
 
-#Libraries
-
-#imports from other package files
-
 #Hurricane class
 class Hurricane:
     def __init__(self, year, start_date, end_date, storm_name, occurrence, storm_type, comment):

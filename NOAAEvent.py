@@ -1,10 +1,6 @@
 #Lauren Eckert
 #NJSESP Project for Junior Clinic
 
-#Libraries
-
-#imports from other package files
-
 #NOAA events class
 class NOAAEvent:
     def __init__(self, event_id, cz_name_str, begin_location, begin_date, begin_time, event_type, magnitude, tor_f_scale, deaths_direct,
