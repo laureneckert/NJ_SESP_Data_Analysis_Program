@@ -13,6 +13,9 @@ class EagleIEvent:
         self.sum = sum
         self.run_start_time = run_start_time
 
+    START_YEAR = 2014
+    END_YEAR = 2022
+
 def sampleEagleIEvents(eagle_i_events, max_events_to_print=30):
     # Convert event dates to datetime if they are not already
     for event in eagle_i_events:

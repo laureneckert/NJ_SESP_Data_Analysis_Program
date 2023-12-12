@@ -47,7 +47,10 @@ class NOAAEvent:
         self.episode_narrative = episode_narrative
         self.absolute_rownumber = absolute_rownumber
         self.filename = filename
-        self.line_number = line_number       
+        self.line_number = line_number   
+
+    START_YEAR = 2000
+    END_YEAR = 2022    
 
 def get_unique_noaa_regions(hurricanes):
     unique_regions = set()
