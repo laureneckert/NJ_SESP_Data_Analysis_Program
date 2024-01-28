@@ -1,15 +1,28 @@
+#NJSESP Project
 #Lauren Eckert
-#NJSESP Project for Junior Clinic
-#utilities.py
+#Version 2
 
-#Libraries
+# utilities.py
+
+# Libraries
 from datetime import datetime
 import pickle
 import sys
 import contextlib
+import pandas as pd
+import os
 
 def parse_date_time(date_str, time_str):
-    # Combine date and time into a single datetime object
+    """
+    Combine date and time strings into a single datetime object.
+
+    Parameters:
+    date_str (str): The date string in 'mm/dd/yyyy' format.
+    time_str (str): The time string in 'HHMM' format.
+
+    Returns:
+    datetime: The combined datetime object.
+    """
     datetime_str = f"{date_str} {time_str}"
     return datetime.strptime(datetime_str, '%m/%d/%Y %H%M')
 
@@ -29,9 +42,23 @@ def save_to_pickle(obj, file_path):
         print(f"Error saving object to pickle: {e}")
 
 def load_pickle(file_path):
-    with open(file_path, 'rb') as file:
-        return pickle.load(file)
-    
+    """
+    Loads and returns data from a pickle file.
+
+    Parameters:
+    file_path (str): The path of the pickle file to be loaded.
+
+    Returns:
+    object: The Python object loaded from the pickle file.
+    """
+    try:
+        with open(file_path, 'rb') as file:
+            return pickle.load(file)
+    except Exception as e:
+        print(f"Error loading pickle file: {e}")
+        return None
+
+
 @contextlib.contextmanager
 def redirect_stdout_to_file(file_path):
     """
@@ -39,6 +66,10 @@ def redirect_stdout_to_file(file_path):
 
     Parameters:
     file_path (str): Path to the file where stdout will be written.
+
+    Usage:
+    with redirect_stdout_to_file('output.txt'):
+        print("This will go to the file.")
     """
     original_stdout = sys.stdout  # Save the original stdout
     with open(file_path, 'w') as file:

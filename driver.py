@@ -1,50 +1,94 @@
-# Lauren Eckert
-# NJSESP Project for Junior Clinic
-# Driver Script for Hurricane Data Processing
+#NJSESP Project
+#Lauren Eckert
+#Version 2
 
+# Import necessary modules and classes
 import os
-import pickle
-import data_processing as dp
 import utilities as uti
-import data_analysis as da
-
-from EagleIEvent import noaa_to_eaglei_mapping
 from config import config
 
-# Ensure the pickle directory exists
+from DataSource import DataSource
+from EagleIEvent import EagleIEvent
+from NOAAEvent import NOAAEvent
+from FEMA_NRI_data import FEMA_NRI_data
+
+from hazard import Hazard
+from natural_hazard import NaturalHazard
+from hurricanes import Hurricane
+from storm_system import StormSystem
+
+# Check if pickle directory exists
 if not os.path.exists(config['pickle_directory']):
     os.makedirs(config['pickle_directory'])
 
-# Load or create hurricane objects
-hurricanes = dp.load_or_create_hurricanes(config['hurricanes_excel_file_path'], config['pickle_directory'])
+#Load or create data source objects
 
-# Load or add NOAA events
-dp.load_or_add_noaa_events(hurricanes, config['noaa_files_directory'], config['noaa_pickle_path'])
+# Load or create NOAA hurricane events
+noaa_hurricane_events = DataSource.load_or_create(
+    config['noaa_hurricanes_pickle_path'], 
+    config['noaa_hurricane_files_directory'],
+    NOAAEvent,
+    force_recreate=False  # Set to True to force recreation of data
+)
 
-# Load or add Eagle I events
-eagle_i_events = dp.load_or_add_eagle_i_events(config['eagle_i_directory'], config['eagle_i_pickle_path'])
+# Load or create Eagle I events
+eagle_i_events = DataSource.load_or_create(
+    config['eagle_i_pickle_path'], 
+    config['eagle_i_directory'],
+    EagleIEvent,
+    force_recreate=False  # Set to True to force recreation of data
+)
 
-# Call the function with your data
-dp.print_data_samples(hurricanes, eagle_i_events)
+# Load or create FEMA NRI data
+fema_nri_data = DataSource.load_or_create(
+    config['fema_nri_pickle_path'],
+    config['fema_nri_file_path'],
+    FEMA_NRI_data,
+    force_recreate=False # Set to True to force recreation of data
+)
 
-# Flag to control processing of Eagle I events and updating hurricanes
-process_eaglei_events = False  # Set to True to enable processing
+# Print samples using the respective method of each subclass
+"""
+if noaa_hurricane_events:
+    NOAAEvent.print_samples(noaa_hurricane_events, 30)
 
-if process_eaglei_events:
-    # Link Eagle I events to NOAA events
-    dp.link_eaglei_to_noaa(hurricanes, eagle_i_events, noaa_to_eaglei_mapping)
+if eagle_i_events:
+    EagleIEvent.print_samples(eagle_i_events, 30)
 
-    # Save the updated hurricane objects to a pickle file
-    hurricane_pickle_path = os.path.join(config['pickle_directory'], 'hurricane_objects.pkl')
-    uti.save_to_pickle(hurricanes, hurricane_pickle_path)
+if fema_nri_data:
+    FEMA_NRI_data.print_samples(fema_nri_data, 5)
+"""
 
-    print("Updated hurricane objects have been saved back to the pickle file.")
+#Loading and creating natural hazards
+
+# Load or create StormSystem objects for hurricane storms
+storm_systems = StormSystem.load_or_create(
+    config['storm_systems_pickle_path'],
+    config['storm_systems_file_path'],
+    force_recreate=False
+)
+
+#Load or create hazard objects with default values
+hurricanes = NaturalHazard.load_or_create(config['hurricane_pickle_path'], Hurricane, force_recreate=True)
+
+# Do you want to link the storm systems to the hurricanes hazard and then update the hurricanes pickle?
+update_hurricanes_flag = True
+# Check the flag before proceeding
+if update_hurricanes_flag:
+    print("Updating Hurricanes with new Storm Systems...")
+
+    # Loop through storm systems and add them to the Hurricanes object
+    for storm in storm_systems:
+        print(f"Adding Storm System: {storm.storm_name}, Year: {storm.year}")
+        hurricanes.add_storm_system(storm)
+
+    # Save the updated Hurricanes object
+    print("Saving updated Hurricanes data to pickle...")
+    uti.save_to_pickle(hurricanes, config['hurricane_pickle_path'])
+    print("Hurricanes data successfully updated and saved.")
 else:
-    print("Processing of Eagle I events and updating of hurricane objects is skipped.")
+    print("Update Hurricanes flag is set to False. Skipping update.")
 
-file_path = 'C:/Users/laure/Documents/terminal_output.txt'
-with uti.redirect_stdout_to_file(file_path):
-    # All print statements inside this block will be redirected to the specified file
-    print("Hurricane Data Summaries")
-    da.print_hurricane_summaries(hurricanes)
-    # Add your function calls or any other code that produces terminal output here
+
+
+# Similarly, for other natural hazards like Lightning, WinterStorms, etc.
