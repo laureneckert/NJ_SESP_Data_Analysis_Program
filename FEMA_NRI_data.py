@@ -248,7 +248,6 @@ class FEMA_NRI_data(DataSource):
         "NRI_VER"
         ]
 
-
     def extract_data(file_path):
         """
         Reads FEMA NRI data from a CSV file and creates FEMA_NRI_Data objects.

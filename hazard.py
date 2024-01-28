@@ -46,4 +46,3 @@ class Hazard(ABC):
     @abstractmethod
     def print_basic_info(self):
         pass
-        # This is now an abstract method. It must be implemented in any subclass.

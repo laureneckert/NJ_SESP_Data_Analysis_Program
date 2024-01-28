@@ -38,12 +38,27 @@ class NaturalHazard(Hazard):
         # Override the method from the parent class
         pass
 
+    @abstractmethod
     def print_basic_info(self):
-        # Override the abstract method from the parent class
-        print(f"Natural Hazard: {self.type_of_hazard}")
-        print(f"Start Date: {self.start_date}, End Date: {self.end_date}")
-        # Add more details as required
+        pass
 
+    def add_noaa_event(self, noaa_event):
+        """
+        Adds a NOAA event to the noaa_events list.
+
+        Parameters:
+        noaa_event: The NOAAEvent object to be added.
+        """
+        self.noaa_events.append(noaa_event)
+    
+    def add_eaglei_event(self, eaglei_event):
+        """
+        Adds an Eagle I event to the eaglei_events list.
+
+        Parameters:
+        eaglei_event: The EagleIEvent object to be added.
+        """
+        self.eaglei_events.append(eaglei_event)
 
     @staticmethod
     @abstractmethod

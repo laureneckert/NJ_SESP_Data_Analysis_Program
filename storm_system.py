@@ -5,6 +5,7 @@
 import pandas as pd
 import utilities as uti
 import os
+from datetime import timedelta
 
 class StormSystem:
     def __init__(self, year, start_date, end_date, storm_name, occurrence=1, storm_type=None, intensity=None, comment=None):
@@ -21,12 +22,6 @@ class StormSystem:
     def extract_data(file_path):
         """
         Reads data from an Excel file and creates StormSystem objects.
-
-        Parameters:
-        file_path (str): Path to the Excel file containing storm system data.
-
-        Returns:
-        list: A list of StormSystem objects created from the file data.
         """
         storm_systems = []
         try:
@@ -34,16 +29,28 @@ class StormSystem:
             print(f"Successfully read file: {file_path}")
 
             for index, row in df.iterrows():
-                # Handling missing 'End Date'
-                end_date = row['End Date'] if not pd.isnull(row['End Date']) else row['Start Date']
+                print(f"Processing row {index}: {row}")  # Debugging statement
+
+                # Set the start date to the beginning of the day
+                start_date = pd.to_datetime(row['Start Date']).normalize()
+                print(f"Start date set to: {start_date}")  # Debugging statement
+
+                # Handling 'End Date'
+                if pd.isnull(row['End Date']):
+                    # Set end date to the end of the start date's day
+                    end_date = start_date + timedelta(days=1) - timedelta(seconds=1)
+                else:
+                    # Set end date to the end of the provided end date's day
+                    end_date = pd.to_datetime(row['End Date']).normalize() + timedelta(days=1) - timedelta(seconds=1)
+                print(f"End date set to: {end_date}")  # Debugging statement
 
                 # Create a StormSystem object
                 storm = StormSystem(
                     year=row['Year'],
-                    start_date=row['Start Date'],
+                    start_date=start_date,
                     end_date=end_date,
                     storm_name=row['Storm Name'],
-                    occurrence=row.get('Occurrence', 1),  # Default to 1 if not specified
+                    occurrence=row.get('Occurrence', 1),
                     storm_type=row.get('Storm Type', None),
                     intensity=row.get('Intensity', None),
                     comment=row.get('Comment', None)
@@ -52,12 +59,10 @@ class StormSystem:
 
         except Exception as e:
             print(f"Error reading file {file_path}: {e}")
-            return []  # Return an empty list in case of an error
+            return []
 
         print(f"Extracted {len(storm_systems)} storm systems from {file_path}")
         return storm_systems
-
-
 
     def print_basic_info(self):
         print(f"Storm System: {self.storm_name}, Year: {self.year}, Occurrence: {self.occurrence}")

@@ -6,7 +6,7 @@
 from natural_hazard import NaturalHazard
 
 class Hurricane(NaturalHazard):
-    def __init__(self, type_of_hazard='hurricane'):
+    def __init__(self, type_of_hazard='hurricanes'):
         super().__init__(type_of_hazard)
         self.storm_systems = []  # List to store individual StormSystem objects
 
@@ -14,9 +14,19 @@ class Hurricane(NaturalHazard):
         self.storm_systems.append(storm_system)
 
     def print_basic_info(self):
-        super().print_basic_info()
-        for system in self.storm_systems:
-            system.print_basic_info()
+        print(f"Hurricane Hazard Summary:")
+        print(f"Type of Hazard: {self.type_of_hazard}")
+        print(f"Total Property Damage: {self.total_property_damage}")
+        print(f"Total Outages Sum: {self.total_outages_sum}")
+        print(f"Risk Score: {self.risk_score}")
+        print(f"No. of Associated Storm Systems: {len(self.storm_systems)}")
+
+        # Print sample storm systems
+        sample_size = min(5, len(self.storm_systems))  # Adjust sample size as needed
+        print(f"\nSample Storm Systems:")
+        for i in range(sample_size):
+            storm = self.storm_systems[i]
+            storm.print_basic_info()  # Call the storm_system's method
 
     @staticmethod
     def create_default_instances():

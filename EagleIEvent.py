@@ -6,6 +6,8 @@ import pandas as pd
 from datetime import datetime
 import os
 from DataSource import DataSource
+import utilities as uti
+import config
 
 class EagleIEvent(DataSource):
     def __init__(self, fips_code, county, state, sum, run_start_time):
@@ -60,18 +62,9 @@ class EagleIEvent(DataSource):
 
     @staticmethod
     def filter_eagle_i_with_noaa(eagle_i_events, noaa_events, noaa_to_eaglei_mapping):
-        """
-        Filters Eagle I events based on matching NOAA events.
-
-        Parameters:
-        eagle_i_events (list): List of EagleIEvent objects.
-        noaa_events (list): List of NOAAEvent objects.
-        noaa_to_eaglei_mapping (dict): Mapping of NOAA region names to Eagle I county names.
-
-        Returns:
-        list: Filtered list of EagleIEvent objects.
-        """
         filtered_events = []
+        non_match_counter = 0  # Initialize counter for non-matching events
+
         for eagle_i_event in eagle_i_events:
             eagle_i_county = eagle_i_event['county']
             eagle_i_time = eagle_i_event['run_start_time']
@@ -80,32 +73,49 @@ class EagleIEvent(DataSource):
             if isinstance(eagle_i_time, str):
                 eagle_i_time = datetime.strptime(eagle_i_time, '%Y-%m-%d %H:%M:%S')
 
+            match_found = False
             for noaa_event in noaa_events:
                 noaa_region = noaa_to_eaglei_mapping.get(noaa_event.cz_name_str, noaa_event.cz_name_str)
 
                 if eagle_i_county == noaa_region:
-                    # Pad begin and end times with zeros to ensure correct format
                     noaa_event_start_time = datetime.strptime(f"{noaa_event.begin_date} {noaa_event.begin_time:04d}", '%m/%d/%Y %H%M')
                     noaa_event_end_time = datetime.strptime(f"{noaa_event.end_date} {noaa_event.end_time:04d}", '%m/%d/%Y %H%M')
 
                     if noaa_event_start_time <= eagle_i_time <= noaa_event_end_time:
                         filtered_events.append(eagle_i_event)
-                        # Continues searching for more matches
+                        print(f"Match found: Eagle I event in {eagle_i_county} on {eagle_i_time} matches NOAA event in {noaa_region}.")
+                        match_found = True
+                        break  # Stop checking further once a match is found
+
+            if not match_found:
+                non_match_counter += 1
+                # Print an update for every 20 non-matching events
+                if non_match_counter % 100 == 0:
+                    print(f"Checked {non_match_counter} non-matching events so far.")
 
         print(f"Filtered {len(filtered_events)} matching Eagle I events from {len(eagle_i_events)} original events.")
         return filtered_events
 
-    @staticmethod
-    def assign_eagle_i_list_to_hazard(hazard, eagle_i_events):
-        """
-        Assigns a list of Eagle I events to a given hazard.
 
-        Parameters:
-        hazard (Hazard): The hazard to assign events to.
-        eagle_i_events (list): List of EagleIEvent objects.
-        """
-        for event in eagle_i_events:
-            hazard.add_eaglei_event(event)
+    @staticmethod
+    def assign_eagle_i_events_to_hazards(hazards, eagle_i_events, noaa_to_eaglei_mapping):
+        for hazard in hazards:
+            print(f"Processing {hazard.type_of_hazard}...")
+            filtered_eagle_i_events = EagleIEvent.filter_eagle_i_with_noaa(
+                eagle_i_events, hazard.noaa_events, noaa_to_eaglei_mapping
+            )
+
+            for event in filtered_eagle_i_events:
+                hazard.add_eaglei_event(event)
+            print(f"Added {len(filtered_eagle_i_events)} Eagle I events to {hazard.type_of_hazard}.")
+
+            try:
+                # Update hazard data and save it
+                pickle_path = config[hazard.type_of_hazard.lower() + '_pickle_path']
+                uti.save_to_pickle(hazard, pickle_path)
+                print(f"Updated {hazard.type_of_hazard} data successfully saved to {pickle_path}.")
+            except Exception as e:
+                print(f"Error in saving updated data for {hazard.type_of_hazard}: {e}")
 
     @staticmethod
     def print_samples(eagle_i_events, sample_size=30):

@@ -9,6 +9,9 @@ import os
 from DataSource import DataSource
 import utilities as uti
 from datetime import datetime
+from config import config
+import hazard
+import natural_hazard
 
 class NOAAEvent(DataSource):
     def __init__(self, event_id, cz_name_str, begin_location, begin_date, begin_time, event_type, magnitude, tor_f_scale, deaths_direct,
@@ -59,7 +62,6 @@ class NOAAEvent(DataSource):
         self.filename = filename
         self.line_number = line_number       
         
-
     def extract_data(directory_path):
         """
         Reads NOAA event data from CSV files in a directory and creates NOAAEvent objects.
@@ -133,19 +135,38 @@ class NOAAEvent(DataSource):
         return noaa_events
 
     @staticmethod
-    def link_noaa_event_to_hazard(noaa_event, hazard):
+    @staticmethod
+    def assign_and_link_noaa_events_to_hazard(noaa_event_groups):
         """
-        Links a NOAA event to a specific hazard.
-
-        Parameters:
-        noaa_event: The NOAA event to be linked.
-        hazard: The hazard to which the NOAA event is linked.
-
-        Returns:
-        None
+        Assigns and links NOAA events to their corresponding hazards based on a mapping.
         """
-        hazard.add_noaa_event(noaa_event)
-        # Additional logic if needed
+        for hazard_type, events in noaa_event_groups.items():
+            hazard = events['hazard']
+
+            print(f"Assigning NOAA events to {hazard.type_of_hazard}...")
+            count = 0  # Counter to track the number of successfully processed events
+            for event in events['events']:
+                try:
+                    hazard.add_noaa_event(event)
+                    count += 1  # Increment counter upon successful addition
+                except Exception as e:
+                    print(f"Error in processing NOAA event for {hazard.type_of_hazard}: {e}")
+                    continue  # Proceed with the next event
+
+            # Print success message after processing all events for a hazard
+            print(f"Successfully assigned {count} NOAA events to {hazard.type_of_hazard}.")
+
+            try:
+                # Update hazard data
+                pickle_path = config[hazard.type_of_hazard.lower() + '_pickle_path']
+                uti.save_to_pickle(hazard, pickle_path)
+                print(f"{hazard.type_of_hazard} data successfully updated and saved.")
+            except Exception as e:
+                print(f"Error in saving updated data for {hazard.type_of_hazard}: {e}")
+
+        print("NOAA events assignment and linking process completed.")
+
+
 
     @staticmethod
     def get_unique_noaa_regions(hazards):
