@@ -62,4 +62,4 @@ class Hurricane(NaturalHazard):
 
         # Add other default values as required
 
-        return [default_hurricane]
+        return default_hurricane

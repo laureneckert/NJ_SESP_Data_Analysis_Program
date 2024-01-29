@@ -9,7 +9,7 @@ import os
 from DataSource import DataSource
 import utilities as uti
 from datetime import datetime
-from config import config
+import njsesp_config as config
 import hazard
 import natural_hazard
 
@@ -158,7 +158,7 @@ class NOAAEvent(DataSource):
 
             try:
                 # Update hazard data
-                pickle_path = config[hazard.type_of_hazard.lower() + '_pickle_path']
+                pickle_path = config['pickle_paths'][hazard.type_of_hazard.lower()]
                 uti.save_to_pickle(hazard, pickle_path)
                 print(f"{hazard.type_of_hazard} data successfully updated and saved.")
             except Exception as e:

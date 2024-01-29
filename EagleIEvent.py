@@ -7,7 +7,7 @@ from datetime import datetime
 import os
 from DataSource import DataSource
 import utilities as uti
-import config
+import njsesp_config as config
 
 class EagleIEvent(DataSource):
     def __init__(self, fips_code, county, state, sum, run_start_time):
@@ -90,7 +90,7 @@ class EagleIEvent(DataSource):
             if not match_found:
                 non_match_counter += 1
                 # Print an update for every 20 non-matching events
-                if non_match_counter % 100 == 0:
+                if non_match_counter % 5000 == 0:
                     print(f"Checked {non_match_counter} non-matching events so far.")
 
         print(f"Filtered {len(filtered_events)} matching Eagle I events from {len(eagle_i_events)} original events.")
@@ -109,13 +109,6 @@ class EagleIEvent(DataSource):
                 hazard.add_eaglei_event(event)
             print(f"Added {len(filtered_eagle_i_events)} Eagle I events to {hazard.type_of_hazard}.")
 
-            try:
-                # Update hazard data and save it
-                pickle_path = config[hazard.type_of_hazard.lower() + '_pickle_path']
-                uti.save_to_pickle(hazard, pickle_path)
-                print(f"Updated {hazard.type_of_hazard} data successfully saved to {pickle_path}.")
-            except Exception as e:
-                print(f"Error in saving updated data for {hazard.type_of_hazard}: {e}")
 
     @staticmethod
     def print_samples(eagle_i_events, sample_size=30):

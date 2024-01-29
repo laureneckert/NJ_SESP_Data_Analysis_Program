@@ -11,6 +11,7 @@ import sys
 import contextlib
 import pandas as pd
 import os
+import njsesp_config
 
 def parse_date_time(date_str, time_str):
     """
@@ -76,3 +77,15 @@ def redirect_stdout_to_file(file_path):
         sys.stdout = file  # Redirect stdout to the file
         yield
         sys.stdout = original_stdout  # Reset stdout back to original
+
+def save_natural_hazards_to_pickle(hazards):
+    for hazard in hazards:
+        try:
+            pickle_path = njsesp_config.get_pickle_path(hazard.type_of_hazard)
+            if pickle_path:
+                save_to_pickle(hazard, pickle_path)
+                print(f"Saved {hazard.type_of_hazard} data to {pickle_path}")
+            else:
+                print(f"No pickle path found for {hazard.type_of_hazard}")
+        except Exception as e:
+            print(f"Error saving {hazard.type_of_hazard}: {e}")

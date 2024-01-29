@@ -73,7 +73,9 @@ class NaturalHazard(Hazard):
     def load_or_create(pickle_path, subclass, force_recreate=False):
         if os.path.exists(pickle_path) and not force_recreate:
             print(f"Loading {pickle_path} from pickle.")
-            return uti.load_pickle(pickle_path)
+            loaded_data = uti.load_pickle(pickle_path)
+            # Return the first item if loaded_data is a list, otherwise return the loaded_data itself
+            return loaded_data[0] if isinstance(loaded_data, list) else loaded_data
         else:
             if force_recreate:
                 print(f"Force recreate flag is set. Creating new {subclass.__name__} instances.")
@@ -82,4 +84,4 @@ class NaturalHazard(Hazard):
 
             data = subclass.create_default_instances()
             uti.save_to_pickle(data, pickle_path)
-            return data[0]
+            return data[0] if isinstance(data, list) else data
