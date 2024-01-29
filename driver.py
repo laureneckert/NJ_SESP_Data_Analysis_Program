@@ -147,3 +147,11 @@ uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
 
 pickle_path_for_storm_systems = config['pickle_paths']['storm_systems']
 uti.save_to_pickle(storm_systems, pickle_path_for_storm_systems)
+"""
+# Loop through storm systems and plot outages
+for storm in hurricanes.storm_systems:
+    if storm.year >= 2015:  # Change this as per your requirement
+        print(f"Plotting outages for storm: {storm.storm_name}")
+        storm.plot_outages_over_time(eagle_i_events)
+        input("Press Enter to continue...")  # Wait for user input to proceed
+"""

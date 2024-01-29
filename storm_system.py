@@ -6,6 +6,8 @@ import pandas as pd
 import utilities as uti
 import os
 from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 class StormSystem:
     def __init__(self, year, start_date, end_date, storm_name, occurrence=1, storm_type=None, intensity=None, comment=None, NOAA_database_search_link = ''):
@@ -133,4 +135,44 @@ class StormSystem:
         print(f"Total peak outages for {self.storm_name}: {self.total_peak_outages}")
         return self.total_peak_outages
 
+    def plot_outages_over_time(self, all_eaglei_events):
+        # Filter events specific to this storm system
+        relevant_events = [event for event in all_eaglei_events if self.start_date <= pd.to_datetime(event['run_start_time']).to_pydatetime() <= self.end_date]
 
+        if not relevant_events:
+            print(f"No outage data available for {self.storm_name}")
+            return
+
+        # Process and plot the data
+        outage_data = {}  # Dictionary to store outages over time
+        for event in relevant_events:
+            time = pd.to_datetime(event['run_start_time']).to_pydatetime()
+            outage = event['sum']  # Or whatever the key is for outage data
+            outage_data[time] = outage
+
+        # Sort the dictionary by time and extract times and outages
+        sorted_times = sorted(outage_data)
+        sorted_outages = [outage_data[time] for time in sorted_times]
+
+        # Plotting logic with improved aesthetics
+        plt.figure(figsize=(15, 7))  # Larger figure size for better visibility
+        plt.plot(sorted_times, sorted_outages, marker='o', linestyle='-', color='blue')  # Line graph with markers
+
+        # Formatting the date on the x-axis
+        date_format = mdates.DateFormatter('%Y-%m-%d %H:%M')
+        plt.gca().xaxis.set_major_formatter(date_format)
+        plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=1))  # One tick per day
+        plt.gca().xaxis.set_minor_locator(mdates.HourLocator(interval=6))  # One tick every 6 hours for minor ticks
+        plt.gcf().autofmt_xdate()  # Automatic rotation of date labels
+
+        # Set the font sizes
+        plt.title(f"Outages Over Time for {self.storm_name}", fontsize=18)
+        plt.xlabel("Time", fontsize=14)
+        plt.ylabel("Outages", fontsize=14)
+
+        # Enable grid
+        plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+        # Show the plot
+        plt.tight_layout()  # Adjust the padding between and around subplots.
+        plt.show()
