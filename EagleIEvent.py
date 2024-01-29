@@ -90,7 +90,7 @@ class EagleIEvent(DataSource):
             if not match_found:
                 non_match_counter += 1
                 # Print an update for every 20 non-matching events
-                if non_match_counter % 5000 == 0:
+                if non_match_counter % 10000 == 0:
                     print(f"Checked {non_match_counter} non-matching events so far.")
 
         print(f"Filtered {len(filtered_events)} matching Eagle I events from {len(eagle_i_events)} original events.")

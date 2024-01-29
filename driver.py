@@ -113,10 +113,20 @@ uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
 for hazard in hazards:
     hazard.print_data_source_samples(sample_size=5) # Print samples of each data source for each hazard
 
-"""
-test_eagle_i_events = [
-    {'fips_code': '34001', 'county': 'Atlantic', 'state': 'NJ', 'sum': 100, 'run_start_time': '2023-01-01 12:30:00'},
-    {'fips_code': '34003', 'county': 'Bergen', 'state': 'NJ', 'sum': 200, 'run_start_time': '2023-02-01 10:30:00'},
-    # Add more test events
-]
-"""
+
+# Calculate the average peak outages and percent customers affected
+hurricanes.calculate_average_peak_outages(eagle_i_events)
+hurricanes.calculate_percent_customers_affected()
+# Print the result for verification
+print(f"Average Peak Outages: {hurricanes.customers_affected_sum}")
+print(f"Percent Customers Affected: {hurricanes.percent_customers_affected}%")
+
+frequency_coefficient, intensity_coefficient = hurricanes.calculate_regression_coefficients()
+print(f"Frequency Coefficient: {frequency_coefficient}")
+print(f"Intensity Coefficient: {intensity_coefficient}")
+
+pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
+uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
+
+pickle_path_for_storm_systems = config['pickle_paths']['storm_systems']
+uti.save_to_pickle(storm_systems, pickle_path_for_storm_systems)

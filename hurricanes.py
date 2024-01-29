@@ -4,6 +4,9 @@
 
 #Hurricane class
 from natural_hazard import NaturalHazard
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats
 
 class Hurricane(NaturalHazard):
     def __init__(self, type_of_hazard='hurricanes'):
@@ -63,3 +66,56 @@ class Hurricane(NaturalHazard):
         # Add other default values as required
 
         return default_hurricane
+    
+    def calculate_average_peak_outages(self, eaglei_events):
+        total_peak_outages = 0
+        for storm_system in self.storm_systems:
+            total_peak_outages += storm_system.calculate_peak_outages(eaglei_events)
+
+        if self.storm_systems:
+            self.customers_affected_sum = total_peak_outages / len(self.storm_systems)
+        else:
+            self.customers_affected_sum = 0
+    
+    def calculate_regression_coefficients(self):
+        # Preparing data for Frequency Coefficient
+        year_frequency = {}
+        for storm in self.storm_systems:
+            year = storm.start_date.year
+            year_frequency[year] = year_frequency.get(year, 0) + 1
+
+        years = list(year_frequency.keys())
+        frequencies = list(year_frequency.values())
+
+        # Preparing data for Intensity Coefficient
+        intensities = [storm.intensity for storm in self.storm_systems]
+
+        # Linear Regression for Frequency
+        slope_freq, intercept, r_value, p_value, std_err = stats.linregress(years, frequencies)
+        self.frequency_coefficient = slope_freq
+
+        # Plotting Frequency
+        plt.figure(figsize=(10, 5))
+        plt.scatter(years, frequencies, color='blue')
+        plt.plot(years, intercept + slope_freq*np.array(years), 'r')
+        plt.title('Storm Frequency Over Time')
+        plt.xlabel('Year')
+        plt.ylabel('Frequency')
+        plt.grid(True)
+        plt.show()
+
+        # Linear Regression for Intensity
+        slope_intensity, intercept, r_value, p_value, std_err = stats.linregress(years, intensities)
+        self.intensity_coefficient = slope_intensity
+
+        # Plotting Intensity
+        plt.figure(figsize=(10, 5))
+        plt.scatter(years, intensities, color='green')
+        plt.plot(years, intercept + slope_intensity*np.array(years), 'r')
+        plt.title('Storm Intensity Over Time')
+        plt.xlabel('Year')
+        plt.ylabel('Intensity')
+        plt.grid(True)
+        plt.show()
+
+        return self.frequency_coefficient, self.intensity_coefficient

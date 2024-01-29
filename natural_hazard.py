@@ -114,3 +114,12 @@ class NaturalHazard(Hazard):
                 print(f"Sample {i+1}: {key} - {value}")
 
             print("\nEnd of Data Samples")
+
+    def calculate_percent_customers_affected(self):
+        # Define the total number of customers in the state
+        total_customers_in_state = 1000000 # Replace with the actual number
+
+        if total_customers_in_state > 0:
+            self.percent_customers_affected = (self.customers_affected_sum / total_customers_in_state) * 100
+        else:
+            self.percent_customers_affected = 0.0

@@ -109,13 +109,11 @@ class StormSystem:
         return storm_systems
     
     def calculate_peak_outages(self, eaglei_events):
-        self.peak_outages_by_county = {}
-        self.total_peak_outages = 0
-
+        peak_outages_by_county = {}
         for event in eaglei_events:
-            if event.county in self.peak_outages_by_county:
-                self.peak_outages_by_county[event.county] = max(self.peak_outages_by_county[event.county], event.outage)
-            else:
-                self.peak_outages_by_county[event.county] = event.outage
-
-        self.total_peak_outages = sum(self.peak_outages_by_county.values())
+            if event.run_start_time >= self.start_date and event.run_end_time <= self.end_date:
+                if event.county in peak_outages_by_county:
+                    peak_outages_by_county[event.county] = max(peak_outages_by_county[event.county], event.outage)
+                else:
+                    peak_outages_by_county[event.county] = event.outage
+        return sum(peak_outages_by_county.values())
