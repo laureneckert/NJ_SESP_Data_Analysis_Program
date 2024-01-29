@@ -25,28 +25,28 @@ noaa_hurricane_events = DataSource.load_or_create( # Load or create NOAA hurrica
     config['pickle_paths']['noaa_hurri'], 
     config['data_paths']['noaa']['noaa_hurricanes_files_directory'],
     NOAAEvent,
-    force_recreate=True
+    force_recreate=False
 )
 eagle_i_events = DataSource.load_or_create( #Load or create Eagle I events
     config['pickle_paths']['eagle_i'], 
     config['data_paths']['eagle_i']['directory'],
     EagleIEvent,
-    force_recreate=True
+    force_recreate=False
 )
 fema_nri_data = DataSource.load_or_create( # Load or create FEMA NRI data
     config['pickle_paths']['fema_nri'],
     config['data_paths']['fema_nri']['file_path'],
     FEMA_NRI_data,
-    force_recreate=True
+    force_recreate=False
 )
 
-print_data = True
+print_data = False
 # Print samples using the respective method of each subclass
 if print_data:
-    #if noaa_hurricane_events:
-        #NOAAEvent.print_samples(noaa_hurricane_events, 30)
-    #if eagle_i_events:
-       #EagleIEvent.print_samples(eagle_i_events, 30)
+    if noaa_hurricane_events:
+        NOAAEvent.print_samples(noaa_hurricane_events, 30)
+    if eagle_i_events:
+       EagleIEvent.print_samples(eagle_i_events, 30)
     if fema_nri_data:
         FEMA_NRI_data.print_samples(fema_nri_data, 5)
 else:
@@ -63,7 +63,6 @@ storm_systems = StormSystem.load_or_create( # Load or create StormSystem objects
 hurricanes = NaturalHazard.load_or_create(config['pickle_paths']['hurricanes'], Hurricane, force_recreate=True)
 
 update_hurricanes_storm_systems_flag = True # Do you want to link the storm systems to the hurricanes hazard and then update the hurricanes pickle?
-
 if update_hurricanes_storm_systems_flag: # Check the flag before proceeding
     print("Updating Hurricanes with new Storm Systems...")
     
@@ -84,7 +83,6 @@ if print_data_2:
 else:
     print("Print hurricane data sample flag off. Skipping.")
 
-# Similarly, for other natural hazards like Lightning, WinterStorms, etc.
 
 # Initialize list of all hazards
 hazards = [hurricanes] # Add other hazards to this list
@@ -119,7 +117,7 @@ if sort_and_assign_then_save:
     # Save the updated hurricane object
     pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
     uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
-    
+   
 else:
     print("Sorting and assigning data skipped.")
 
@@ -127,15 +125,9 @@ else:
 for hazard in hazards:
     hazard.print_data_source_samples(sample_size=5) # Print samples of each data source for each hazard
 
-pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
-uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
 
-pickle_path_for_storm_systems = config['pickle_paths']['storm_systems']
-uti.save_to_pickle(storm_systems, pickle_path_for_storm_systems)
-
-"""
 # Calculate the average peak outages and percent customers affected
-hurricanes.calculate_average_peak_outages(eagle_i_events)
+hurricanes.calculate_average_peak_outages()
 hurricanes.calculate_percent_customers_affected()
 # Print the result for verification
 print(f"Average Peak Outages: {hurricanes.customers_affected_sum}")
@@ -145,5 +137,13 @@ frequency_coefficient, intensity_coefficient = hurricanes.calculate_regression_c
 print(f"Frequency Coefficient: {frequency_coefficient}")
 print(f"Intensity Coefficient: {intensity_coefficient}")
 
+# Analyze hurricane data
+hurricanes.analyze_hurricane_data()
 
-"""
+
+
+pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
+uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
+
+pickle_path_for_storm_systems = config['pickle_paths']['storm_systems']
+uti.save_to_pickle(storm_systems, pickle_path_for_storm_systems)

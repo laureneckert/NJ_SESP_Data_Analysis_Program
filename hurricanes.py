@@ -67,55 +67,91 @@ class Hurricane(NaturalHazard):
 
         return default_hurricane
     
-    def calculate_average_peak_outages(self, eaglei_events):
+    def calculate_average_peak_outages(self):
         total_peak_outages = 0
-        for storm_system in self.storm_systems:
-            total_peak_outages += storm_system.calculate_peak_outages(eaglei_events)
-
-        if self.storm_systems:
-            self.customers_affected_sum = total_peak_outages / len(self.storm_systems)
-        else:
+        if not self.storm_systems:
+            print("No storm systems available.")
             self.customers_affected_sum = 0
-    
+            return
+
+        print(f"Calculating peak outages for {len(self.storm_systems)} storm systems...")
+        for storm_system in self.storm_systems:
+            storm_outages = storm_system.calculate_peak_outages(self.eaglei_events)
+            print(f"Total peak outages for {storm_system.storm_name}: {storm_outages}")
+            total_peak_outages += storm_outages
+
+        self.customers_affected_sum = total_peak_outages / len(self.storm_systems)
+        print(f"Average Peak Outages: {self.customers_affected_sum}")
+
     def calculate_regression_coefficients(self):
         # Preparing data for Frequency Coefficient
         year_frequency = {}
+        year_intensity_sum = {}
+        year_intensity_count = {}
+
         for storm in self.storm_systems:
             year = storm.start_date.year
             year_frequency[year] = year_frequency.get(year, 0) + 1
+            year_intensity_sum[year] = year_intensity_sum.get(year, 0) + storm.intensity
+            year_intensity_count[year] = year_intensity_count.get(year, 0) + 1
 
-        years = list(year_frequency.keys())
-        frequencies = list(year_frequency.values())
+        years = []
+        frequencies = []
+        average_intensities = []
 
-        # Preparing data for Intensity Coefficient
-        intensities = [storm.intensity for storm in self.storm_systems]
+        for year in year_frequency:
+            years.append(year)
+            frequencies.append(year_frequency[year])
+
+            if year_intensity_count[year] > 0:
+                average_intensity = year_intensity_sum[year] / year_intensity_count[year]
+                average_intensities.append(average_intensity)
+            else:
+                # Handle years with no storm systems
+                print(f"No storm systems recorded for the year {year}")
+                average_intensities.append(0)  # Or choose to handle this differently
 
         # Linear Regression for Frequency
-        slope_freq, intercept, r_value, p_value, std_err = stats.linregress(years, frequencies)
-        self.frequency_coefficient = slope_freq
+        if years:
+            slope_freq, intercept, r_value, p_value, std_err = stats.linregress(years, frequencies)
+            self.frequency_coefficient = slope_freq + 1
 
-        # Plotting Frequency
-        plt.figure(figsize=(10, 5))
-        plt.scatter(years, frequencies, color='blue')
-        plt.plot(years, intercept + slope_freq*np.array(years), 'r')
-        plt.title('Storm Frequency Over Time')
-        plt.xlabel('Year')
-        plt.ylabel('Frequency')
-        plt.grid(True)
-        plt.show()
+            # Plotting Frequency
+            plt.figure(figsize=(10, 5))
+            plt.scatter(years, frequencies, color='blue')
+            plt.plot(years, intercept + slope_freq * np.array(years), 'r')
+            plt.title('Storm Frequency Over Time')
+            plt.xlabel('Year')
+            plt.ylabel('Frequency')
+            plt.grid(True)
+            plt.show()
+        else:
+            print("No data available for frequency analysis.")
 
-        # Linear Regression for Intensity
-        slope_intensity, intercept, r_value, p_value, std_err = stats.linregress(years, intensities)
-        self.intensity_coefficient = slope_intensity
+        # Linear Regression for Average Intensity
+        if years:
+            slope_intensity, intercept, r_value, p_value, std_err = stats.linregress(years, average_intensities)
+            self.intensity_coefficient = slope_intensity + 1
 
-        # Plotting Intensity
-        plt.figure(figsize=(10, 5))
-        plt.scatter(years, intensities, color='green')
-        plt.plot(years, intercept + slope_intensity*np.array(years), 'r')
-        plt.title('Storm Intensity Over Time')
-        plt.xlabel('Year')
-        plt.ylabel('Intensity')
-        plt.grid(True)
-        plt.show()
+            # Plotting Intensity
+            plt.figure(figsize=(10, 5))
+            plt.scatter(years, average_intensities, color='green')
+            plt.plot(years, intercept + slope_intensity * np.array(years), 'r')
+            plt.title('Average Storm Intensity Over Time')
+            plt.xlabel('Year')
+            plt.ylabel('Average Intensity')
+            plt.grid(True)
+            plt.show()
+        else:
+            print("No data available for intensity analysis.")
 
         return self.frequency_coefficient, self.intensity_coefficient
+    
+    def analyze_hurricane_data(self):
+        hazard_prefix = "HRCN"
+        total_property_damage = self.calculate_property_damage(hazard_prefix)
+        annualized_frequency = self.calculate_probability(hazard_prefix)
+
+        print(f"Total Property Damage for Hurricanes: {total_property_damage}")
+        print(f"Annualized Frequency (Probability) of Hurricanes: {annualized_frequency}")
+

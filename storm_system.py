@@ -8,7 +8,7 @@ import os
 from datetime import datetime, timedelta
 
 class StormSystem:
-    def __init__(self, year, start_date, end_date, storm_name, occurrence=1, storm_type=None, intensity=None, comment=None):
+    def __init__(self, year, start_date, end_date, storm_name, occurrence=1, storm_type=None, intensity=None, comment=None, NOAA_database_search_link = ''):
         self.year = year
         self.start_date = start_date
         self.end_date = end_date
@@ -17,6 +17,7 @@ class StormSystem:
         self.storm_type = storm_type
         self.intensity = intensity
         self.comment = comment
+        self.NOAA_database_search_link = NOAA_database_search_link
 
         self.peak_outages_by_county = {}  # Stores peak outages for each county
         self.total_peak_outages = 0  # Stores total peak outages for the storm system
@@ -109,24 +110,27 @@ class StormSystem:
         return storm_systems
     
     def calculate_peak_outages(self, eaglei_events):
+        # Reset peak outages
         self.peak_outages_by_county = {}
         self.total_peak_outages = 0
 
         for event in eaglei_events:
             # Ensure the event is within the storm system's timeframe
-            event_time = event['run_start_time']
-            if isinstance(event_time, str):
-                event_time = datetime.strptime(event_time, '%Y-%m-%d %H:%M:%S')
-            elif isinstance(event_time, pd.Timestamp):
-                event_time = event_time.to_pydatetime()
-
-            if event_time >= self.start_date and event_time <= self.end_date:
+            event_time = pd.to_datetime(event['run_start_time']).to_pydatetime()
+            if self.start_date <= event_time <= self.end_date:
                 county = event['county']
-                outage = event['sum']  # Assuming the key for outage is 'sum'
+                outage = event['sum']  # Assuming 'sum' is the correct key for outage data
 
-                if county in self.peak_outages_by_county:
-                    self.peak_outages_by_county[county] = max(self.peak_outages_by_county[county], outage)
-                else:
+                # Update peak outages
+                if county not in self.peak_outages_by_county:
+                    self.peak_outages_by_county[county] = outage
+                    print(f"Initial peak outage in {county}: {outage}")
+                elif outage > self.peak_outages_by_county[county]:
+                    print(f"New peak outage in {county}: {outage} (Previous: {self.peak_outages_by_county[county]})")
                     self.peak_outages_by_county[county] = outage
 
         self.total_peak_outages = sum(self.peak_outages_by_county.values())
+        print(f"Total peak outages for {self.storm_name}: {self.total_peak_outages}")
+        return self.total_peak_outages
+
+

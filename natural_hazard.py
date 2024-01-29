@@ -120,9 +120,52 @@ class NaturalHazard(Hazard):
 
     def calculate_percent_customers_affected(self):
         # Define the total number of customers in the state
-        total_customers_in_state = 1000000 # Replace with the actual number
+        total_customers_in_state = 4030000 #according to utilities websites
 
         if total_customers_in_state > 0:
             self.percent_customers_affected = (self.customers_affected_sum / total_customers_in_state) * 100
         else:
             self.percent_customers_affected = 0.0
+
+    def calculate_property_damage(self, hazard_prefix):
+        """
+        Calculates the total property damage for the hazard.
+
+        Parameters:
+        hazard_prefix (str): The prefix used for the specific natural hazard in FEMA data.
+
+        Returns:
+        float: The total property damage for the hazard.
+        """
+        exposure_attribute = f"{hazard_prefix}_EXPT"
+        loss_ratio_attribute = f"{hazard_prefix}_HLRR"
+        property_damage = 0.0
+
+        for key, value in self.NRI_data_fields.items():
+            if key.startswith(exposure_attribute) and key.replace(exposure_attribute, loss_ratio_attribute) in self.NRI_data_fields:
+                exposure = value
+                loss_ratio = self.NRI_data_fields[key.replace(exposure_attribute, loss_ratio_attribute)]
+                property_damage += exposure * loss_ratio
+
+        return property_damage
+
+    def calculate_probability(self, hazard_prefix):
+        """
+        Calculates the annualized frequency (probability) of the hazard.
+
+        Parameters:
+        hazard_prefix (str): The prefix used for the specific natural hazard in FEMA data.
+
+        Returns:
+        float: The annualized frequency of the hazard.
+        """
+        frequency_attribute = f"{hazard_prefix}_AFREQ"
+        total_frequency = 0.0
+        count = 0
+
+        for key, value in self.NRI_data_fields.items():
+            if key.startswith(frequency_attribute):
+                total_frequency += value
+                count += 1
+
+        return total_frequency / count if count > 0 else 0.0
