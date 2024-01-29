@@ -275,42 +275,37 @@ class FEMA_NRI_data(DataSource):
         print(f"Extracted {len(fema_nri_entries)} FEMA NRI entries from {file_path}")
         return fema_nri_entries
 
-    def link_fema_entry_to_hazard(self, hazards, fema_to_hazard_mapping):
+    @staticmethod
+    def assign_data_to_hazard(hazards, fema_to_hazard_mapping):
         """
-        Links FEMA NRI data entries to the corresponding hazard objects.
+        Assigns FEMA data to each hazard based on their type and FEMA data prefixes.
+        This is a static method and doesn't need access to the instance state.
 
         Parameters:
-        hazards (dict): Dictionary of hazards where the key is the county and the value is the hazard object.
+        hazards (list): List of hazard objects.
         fema_to_hazard_mapping (dict): Mapping of FEMA data field prefixes to hazard types.
-
-        Returns:
-        None
         """
-        for hazard_type, fema_prefixes in fema_to_hazard_mapping.items():
-            if hazard_type in hazards:
-                print(f"Linking FEMA data to {hazard_type} hazards")
-                for hazard in hazards[hazard_type]:
-                    # Assuming hazard object has a 'county' attribute
-                    county = hazard.county
-                    print(f"Processing FEMA data for {county} in {hazard_type}")
+        for hazard in hazards:
+            hazard_type = hazard.type_of_hazard
+            print(f"Assigning FEMA data to {hazard_type} hazard.")
 
-                    # Check if the FEMA data for the county exists
-                    if county in self.__dict__:
-                        fema_data = self.__dict__[county]
+            if hazard_type in fema_to_hazard_mapping:
+                prefixes = fema_to_hazard_mapping[hazard_type]
+                
+                for prefix in prefixes:
+                    print(f"Processing FEMA data for {hazard_type} with prefix {prefix}")
+                    
+                    # Initialize a dictionary to store FEMA data for this prefix
+                    hazard.NRI_data_fields[prefix] = {}
 
-                        # Iterate through FEMA prefixes relevant to the hazard
-                        for prefix in fema_prefixes:
-                            fema_attribute = prefix + "_" + county
-                            if fema_attribute in fema_data:
-                                print(f"Adding {fema_attribute} data to {hazard_type} in {county}")
-                                # Assigning FEMA data to hazard
-                                setattr(hazard, fema_attribute, fema_data[fema_attribute])
-                            else:
-                                print(f"Warning: {fema_attribute} not found in FEMA data for {county}")
-                    else:
-                        print(f"Warning: No FEMA data found for {county}")
+                    for attr in FEMA_NRI_data.get_attributes():
+                        if attr.startswith(prefix):
+                            # Extract the county-specific part of the attribute
+                            county_specific_attr = attr.replace(prefix + "_", "")
+                            hazard.NRI_data_fields[prefix][county_specific_attr] = getattr(FEMA_NRI_data, attr, None)
+                    print(f"Added FEMA data with prefix {prefix} to {hazard_type} hazard.")
             else:
-                print(f"Warning: No hazards found for {hazard_type}")
+                print(f"No FEMA data mapping found for {hazard_type} hazard.")
 
     # Mapping of hazard types to their FEMA NRI data prefixes
     hazard_to_fema_prefix = {

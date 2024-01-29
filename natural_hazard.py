@@ -26,6 +26,7 @@ class NaturalHazard(Hazard):
         self.total_duration_eaglei = 0
         self.outage_duration_by_county = {}
 
+
     def calculate_statistics(self, noaa_to_eaglei_mapping):
         # Placeholder for method that calculates statistics based on NOAA and EagleI data
         pass
@@ -85,3 +86,31 @@ class NaturalHazard(Hazard):
             data = subclass.create_default_instances()
             uti.save_to_pickle(data, pickle_path)
             return data[0] if isinstance(data, list) else data
+
+    def print_data_source_samples(self, sample_size=5):
+            """
+            Prints samples from each data source associated with the hazard.
+
+            Parameters:
+            sample_size (int): The number of samples to print from each data source.
+            """
+            print(f"\n{self.type_of_hazard.upper()} Hazard Data Samples:")
+
+            # Print NOAA Event Samples
+            print("\nNOAA Event Samples:")
+            for i, event in enumerate(self.noaa_events[:sample_size]):
+                print(f"Sample {i+1}: {event}")
+
+            # Print Eagle I Event Samples
+            print("\nEagle I Event Samples:")
+            for i, event in enumerate(self.eaglei_events[:sample_size]):
+                print(f"Sample {i+1}: {event}")
+
+            # Print FEMA NRI Data Samples
+            print("\nFEMA NRI Data Samples:")
+            for i, (key, value) in enumerate(self.NRI_data_fields.items()):
+                if i >= sample_size:
+                    break
+                print(f"Sample {i+1}: {key} - {value}")
+
+            print("\nEnd of Data Samples")

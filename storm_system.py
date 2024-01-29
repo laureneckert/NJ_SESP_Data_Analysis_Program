@@ -18,6 +18,10 @@ class StormSystem:
         self.intensity = intensity
         self.comment = comment
 
+        self.peak_outages_by_county = {}  # Stores peak outages for each county
+        self.total_peak_outages = 0  # Stores total peak outages for the storm system
+
+
     @staticmethod
     def extract_data(file_path):
         """
@@ -103,3 +107,15 @@ class StormSystem:
             uti.save_to_pickle(storm_systems, pickle_path)
 
         return storm_systems
+    
+    def calculate_peak_outages(self, eaglei_events):
+        self.peak_outages_by_county = {}
+        self.total_peak_outages = 0
+
+        for event in eaglei_events:
+            if event.county in self.peak_outages_by_county:
+                self.peak_outages_by_county[event.county] = max(self.peak_outages_by_county[event.county], event.outage)
+            else:
+                self.peak_outages_by_county[event.county] = event.outage
+
+        self.total_peak_outages = sum(self.peak_outages_by_county.values())

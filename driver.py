@@ -25,19 +25,19 @@ noaa_hurricane_events = DataSource.load_or_create( # Load or create NOAA hurrica
     config['pickle_paths']['noaa_hurri'], 
     config['data_paths']['noaa']['noaa_hurricanes_files_directory'],
     NOAAEvent,
-    force_recreate=True
+    force_recreate=False
 )
 eagle_i_events = DataSource.load_or_create( #Load or create Eagle I events
     config['pickle_paths']['eagle_i'], 
     config['data_paths']['eagle_i']['directory'],
     EagleIEvent,
-    force_recreate=True
+    force_recreate=False
 )
 fema_nri_data = DataSource.load_or_create( # Load or create FEMA NRI data
     config['pickle_paths']['fema_nri'],
     config['data_paths']['fema_nri']['file_path'],
     FEMA_NRI_data,
-    force_recreate=True
+    force_recreate=False
 )
 
 # Print samples using the respective method of each subclass
@@ -59,7 +59,7 @@ storm_systems = StormSystem.load_or_create( # Load or create StormSystem objects
 #Load or create hazard objects with default values
 hurricanes = NaturalHazard.load_or_create(config['pickle_paths']['hurricanes'], Hurricane, force_recreate=False)
 
-update_hurricanes_storm_systems_flag = True # Do you want to link the storm systems to the hurricanes hazard and then update the hurricanes pickle?
+update_hurricanes_storm_systems_flag = False # Do you want to link the storm systems to the hurricanes hazard and then update the hurricanes pickle?
 
 if update_hurricanes_storm_systems_flag: # Check the flag before proceeding
     print("Updating Hurricanes with new Storm Systems...")
@@ -95,14 +95,23 @@ noaa_event_groups = {
     # Add other mappings as needed
 }
 
+FEMA_NRI_data.assign_data_to_hazard(hazards, FEMA_NRI_data.hazard_to_fema_prefix)
+# Save the updated hurricane object
+pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
+uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
 
-# Call the method to assign and link NOAA events to hazards
-NOAAEvent.assign_and_link_noaa_events_to_hazard(noaa_event_groups) 
-# Assign Eagle I events to hazards
-EagleIEvent.assign_eagle_i_events_to_hazards(hazards, eagle_i_events, EagleIEvent.noaa_to_eaglei_mapping)
-#save updated hazards
-uti.save_natural_hazards_to_pickle(hazards)
+NOAAEvent.assign_and_link_noaa_events_to_hazard(noaa_event_groups) # assign and link NOAA events to hazards
+# Save the updated hurricane object
+pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
+uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
 
+EagleIEvent.assign_eagle_i_events_to_hazards(hazards, eagle_i_events, EagleIEvent.noaa_to_eaglei_mapping) # Filter & Assign Eagle I events to hazards
+# Save the updated hurricane object
+pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
+uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
+
+for hazard in hazards:
+    hazard.print_data_source_samples(sample_size=5) # Print samples of each data source for each hazard
 
 """
 test_eagle_i_events = [
