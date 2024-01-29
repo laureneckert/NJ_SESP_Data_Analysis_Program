@@ -276,13 +276,61 @@ class FEMA_NRI_data(DataSource):
         return fema_nri_entries
 
     @staticmethod
-    def assign_data_to_hazard(hazards, fema_to_hazard_mapping):
+    def print_samples(fema_nri_data_list, sample_size=5):
+        """
+        Prints a sample of FEMA NRI data entries, specifically for hurricane-related attributes.
+
+        Parameters:
+        fema_nri_data_list (list): List of FEMA_NRI_data instances.
+        sample_size (int): Number of samples to print.
+        """
+        print("\nSample FEMA NRI Data:")
+        for i, fema_data in enumerate(fema_nri_data_list[:sample_size]):
+            print(f"\nSample {i+1}:")
+            print(f"County: {fema_data.COUNTY}, State: {fema_data.STATEABBRV}")
+            print(f"Population: {fema_data.POPULATION}, Building Value: {fema_data.BUILDVALUE}")
+            # Printing hurricane-specific attributes
+            print(f"Hurricane Events: {fema_data.HRCN_EVNTS}")
+            print(f"Hurricane Annualized Frequency: {fema_data.HRCN_AFREQ}")
+            print(f"Hurricane Exposure Area: {fema_data.HRCN_EXP_AREA}")
+            print(f"Hurricane Exposure - Building Value: {fema_data.HRCN_EXPB}")
+            print(f"Hurricane Exposure - Population: {fema_data.HRCN_EXPP}")
+            print(f"Hurricane Exposure - Population Equivalence: {fema_data.HRCN_EXPPE}")
+            print(f"Hurricane Exposure - Agriculture Value: {fema_data.HRCN_EXPA}")
+            print(f"Hurricane Exposure - Total: {fema_data.HRCN_EXPT}")
+            print(f"Hurricane Historic Loss Ratio - Buildings: {fema_data.HRCN_HLRB}")
+            print(f"Hurricane Historic Loss Ratio - Population: {fema_data.HRCN_HLRP}")
+            print(f"Hurricane Historic Loss Ratio - Agriculture: {fema_data.HRCN_HLRA}")
+            print(f"Hurricane Historic Loss Ratio - Total Rating: {fema_data.HRCN_HLRR}")
+            print(f"Hurricane EAL - Buildings: {fema_data.HRCN_EALB}")
+            print(f"Hurricane EAL - Population: {fema_data.HRCN_EALP}")
+            print(f"Hurricane EAL - Population Equivalence: {fema_data.HRCN_EALPE}")
+            print(f"Hurricane EAL - Agriculture: {fema_data.HRCN_EALA}")
+            print(f"Hurricane EAL - Total: {fema_data.HRCN_EALT}")
+            print(f"Hurricane EAL - Society: {fema_data.HRCN_EALS}")
+            print(f"Hurricane EAL - Risk: {fema_data.HRCN_EALR}")
+            print(f"Hurricane ALR - Buildings: {fema_data.HRCN_ALRB}")
+            print(f"Hurricane ALR - Population: {fema_data.HRCN_ALRP}")
+            print(f"Hurricane ALR - Agriculture: {fema_data.HRCN_ALRA}")
+            print(f"Hurricane ALR - NPCTL: {fema_data.HRCN_ALR_NPCTL}")
+            print(f"Hurricane Risk Value: {fema_data.HRCN_RISKV}")
+            print(f"Hurricane Risk Score: {fema_data.HRCN_RISKS}")
+            print(f"Hurricane Risk Rank: {fema_data.HRCN_RISKR}")
+
+        if len(fema_nri_data_list) > sample_size:
+            print(f"\n... and {len(fema_nri_data_list) - sample_size} more entries.")
+
+
+
+
+    @staticmethod
+    def assign_data_to_hazard(hazards, fema_nri_entries, fema_to_hazard_mapping):
         """
         Assigns FEMA data to each hazard based on their type and FEMA data prefixes.
-        This is a static method and doesn't need access to the instance state.
 
         Parameters:
         hazards (list): List of hazard objects.
+        fema_nri_entries (list): List of FEMA_NRI_data instances.
         fema_to_hazard_mapping (dict): Mapping of FEMA data field prefixes to hazard types.
         """
         for hazard in hazards:
@@ -291,25 +339,27 @@ class FEMA_NRI_data(DataSource):
 
             if hazard_type in fema_to_hazard_mapping:
                 prefixes = fema_to_hazard_mapping[hazard_type]
-                
+
                 for prefix in prefixes:
                     print(f"Processing FEMA data for {hazard_type} with prefix {prefix}")
-                    
+
                     # Initialize a dictionary to store FEMA data for this prefix
                     hazard.NRI_data_fields[prefix] = {}
 
-                    for attr in FEMA_NRI_data.get_attributes():
-                        if attr.startswith(prefix):
-                            # Extract the county-specific part of the attribute
-                            county_specific_attr = attr.replace(prefix + "_", "")
-                            hazard.NRI_data_fields[prefix][county_specific_attr] = getattr(FEMA_NRI_data, attr, None)
+                    for fema_entry in fema_nri_entries:
+                        for attr in FEMA_NRI_data.get_attributes():
+                            if attr.startswith(prefix):
+                                # Extract the county-specific part of the attribute
+                                county_specific_attr = attr.replace(prefix + "_", "")
+                                hazard.NRI_data_fields[prefix][county_specific_attr] = getattr(fema_entry, attr, None)
                     print(f"Added FEMA data with prefix {prefix} to {hazard_type} hazard.")
             else:
                 print(f"No FEMA data mapping found for {hazard_type} hazard.")
 
+
     # Mapping of hazard types to their FEMA NRI data prefixes
     hazard_to_fema_prefix = {
-        'hurricane': ['HRCN'],               # Hurricane
+        'hurricanes': ['HRCN'],               # Hurricane
         'earthquake': ['ERQK'],              # Earthquake
         'flooding': ['RFLD', 'CFLD'],        # Flooding (Riverine Flooding, Coastal Flooding)
         'avalanche': ['AVLN'],               # Avalanche
@@ -326,29 +376,33 @@ class FEMA_NRI_data(DataSource):
         'winter_storms': ['CWAV', 'ISTM', 'WNTW'],  # Winter Storms (Cold Wave, Ice Storm, Winter Weather)
     }
 
-
-    @staticmethod
-    def print_samples(fema_nri_data, sample_size=5):
+    def print_data_source_samples(self, sample_size=5):
         """
-        Prints a sample of the FEMA NRI data.
+        Prints samples from each data source associated with the hazard.
 
         Parameters:
-        fema_nri_data (list): A list of FEMA_NRI_data objects.
-        sample_size (int): Number of samples to print. Default is 5.
-
-        Returns:
-        None
+        sample_size (int): The number of samples to print from each data source.
         """
-        print("\nSample FEMA NRI Data:")
-        for i, data in enumerate(fema_nri_data[:sample_size]):
-            print(f"\nSample {i+1}:")
-            print(f"County: {data.COUNTY}, State: {data.STATEABBRV}")
-            print(f"Population: {data.POPULATION}, Building Value: {data.BUILDVALUE}")
-            print(f"Agricultural Value: {data.AGRIVALUE}, Area: {data.AREA}")
-            print(f"Risk Rating: {data.RISK_RATNG}, Risk Score: {data.RISK_SCORE}")
-            print(f"Expected Annual Loss: {data.EAL_SCORE}, Resilience: {data.RESL_SCORE}")
+        print(f"\n{self.type_of_hazard.upper()} Hazard Data Samples:")
 
-            # Add more attributes as needed
+        # Print NOAA Event Samples
+        print("\nNOAA Event Samples:")
+        for i, event in enumerate(self.noaa_events[:sample_size]):
+            print(f"Sample {i+1}: {event}")
 
-        if len(fema_nri_data) > sample_size:
-            print(f"\n... and {len(fema_nri_data) - sample_size} more entries.")
+        # Print Eagle I Event Samples
+        print("\nEagle I Event Samples:")
+        for i, event in enumerate(self.eaglei_events[:sample_size]):
+            print(f"Sample {i+1}: {event}")
+
+        # Print FEMA NRI Data Samples
+        print("\nFEMA NRI Data Samples:")
+        for i, (prefix, data_fields) in enumerate(self.NRI_data_fields.items()):
+            if i >= sample_size:
+                break
+            print(f"\nSample {i+1} for {prefix}:")
+            for key, value in data_fields.items():
+                print(f"{key}: {value}")
+
+        print("\nEnd of Data Samples")
+

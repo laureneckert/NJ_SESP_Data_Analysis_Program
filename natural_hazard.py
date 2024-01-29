@@ -6,6 +6,9 @@ from abc import ABC, abstractmethod
 from hazard import Hazard
 import utilities as uti
 import os
+import EagleIEvent
+import NOAAEvent
+import FEMA_NRI_data
 
 class NaturalHazard(Hazard):
     def __init__(self, type_of_hazard):

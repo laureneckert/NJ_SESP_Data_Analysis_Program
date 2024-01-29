@@ -100,7 +100,7 @@ class EagleIEvent(DataSource):
 
                 if noaa_event_start_time <= eagle_i_time <= noaa_event_end_time:
                     filtered_events.append(eagle_i_event)  # Match found
-                    print(f"Match found: Eagle I event in {region} on {eagle_i_time} matches NOAA event between {noaa_event_start_time} and {noaa_event_end_time}.")
+                    #print(f"Match found: Eagle I event in {region} on {eagle_i_time} matches NOAA event between {noaa_event_start_time} and {noaa_event_end_time}.")
                     match_found = True
                     break  # Move to next Eagle I event
 
@@ -108,7 +108,7 @@ class EagleIEvent(DataSource):
 
             if not match_found:
                 non_match_counter += 1
-                if non_match_counter % 30000 == 0:
+                if non_match_counter % 100000 == 0:
                     print(f"Checked {non_match_counter} non-matching events so far.")
 
         print(f"Filtered {len(filtered_events)} matching Eagle I events from {len(eagle_i_events)} original events.")
