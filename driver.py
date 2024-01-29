@@ -25,13 +25,13 @@ noaa_hurricane_events = DataSource.load_or_create( # Load or create NOAA hurrica
     config['pickle_paths']['noaa_hurri'], 
     config['data_paths']['noaa']['noaa_hurricanes_files_directory'],
     NOAAEvent,
-    force_recreate=False
+    force_recreate=True
 )
 eagle_i_events = DataSource.load_or_create( #Load or create Eagle I events
     config['pickle_paths']['eagle_i'], 
     config['data_paths']['eagle_i']['directory'],
     EagleIEvent,
-    force_recreate=False
+    force_recreate=True
 )
 fema_nri_data = DataSource.load_or_create( # Load or create FEMA NRI data
     config['pickle_paths']['fema_nri'],
@@ -57,7 +57,7 @@ else:
 storm_systems = StormSystem.load_or_create( # Load or create StormSystem objects for hurricane storms
     config['pickle_paths']['storm_systems'],
     config['data_paths']['hurricanes']['storm_systems_file'],
-    force_recreate=False
+    force_recreate=True
 )
 #Load or create hazard objects with default values
 hurricanes = NaturalHazard.load_or_create(config['pickle_paths']['hurricanes'], Hurricane, force_recreate=True)
@@ -77,7 +77,7 @@ if update_hurricanes_storm_systems_flag: # Check the flag before proceeding
 else:
     print("Update Hurricanes flag is set to False. Skipping update.")
 
-print_data_2 = False
+print_data_2 = True
 if print_data_2:
     if hurricanes:
         hurricanes.print_basic_info() # Print a summary of hurricane data
