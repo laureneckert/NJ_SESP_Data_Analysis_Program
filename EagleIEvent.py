@@ -4,6 +4,7 @@
 
 import pandas as pd
 from datetime import datetime
+from collections import defaultdict
 import os
 from DataSource import DataSource
 import utilities as uti
@@ -62,41 +63,57 @@ class EagleIEvent(DataSource):
 
     @staticmethod
     def filter_eagle_i_with_noaa(eagle_i_events, noaa_events, noaa_to_eaglei_mapping):
+        # Preprocess NOAA events: Group by region and sort by start time
+        noaa_events_processed = defaultdict(list)
+        for noaa_event in noaa_events:
+            region = noaa_to_eaglei_mapping.get(noaa_event.cz_name_str, noaa_event.cz_name_str)
+            start_time = datetime.strptime(f"{noaa_event.begin_date} {noaa_event.begin_time:04d}", '%m/%d/%Y %H%M')
+            end_time = datetime.strptime(f"{noaa_event.end_date} {noaa_event.end_time:04d}", '%m/%d/%Y %H%M')
+            noaa_events_processed[region].append((start_time, end_time))
+
+        for region in noaa_events_processed:
+            noaa_events_processed[region].sort(key=lambda x: x[0])
+
+        # Dictionary to keep track of the last checked index for NOAA events in each region
+        last_checked_index_per_region = {region: 0 for region in noaa_events_processed}
+        
         filtered_events = []
-        non_match_counter = 0  # Initialize counter for non-matching events
+        non_match_counter = 0  # Counter for non-matching events
 
         for eagle_i_event in eagle_i_events:
-            eagle_i_county = eagle_i_event['county']
             eagle_i_time = eagle_i_event['run_start_time']
-
-            # Check if run_start_time is a string and convert it to datetime
+            # Check if the time is a string and convert it to datetime if needed
             if isinstance(eagle_i_time, str):
                 eagle_i_time = datetime.strptime(eagle_i_time, '%Y-%m-%d %H:%M:%S')
+            elif isinstance(eagle_i_time, pd.Timestamp):
+                eagle_i_time = eagle_i_time.to_pydatetime()
+
+            region = eagle_i_event['county']
 
             match_found = False
-            for noaa_event in noaa_events:
-                noaa_region = noaa_to_eaglei_mapping.get(noaa_event.cz_name_str, noaa_event.cz_name_str)
+            for i in range(last_checked_index_per_region[region], len(noaa_events_processed[region])):
+                noaa_event_start_time, noaa_event_end_time = noaa_events_processed[region][i]
 
-                if eagle_i_county == noaa_region:
-                    noaa_event_start_time = datetime.strptime(f"{noaa_event.begin_date} {noaa_event.begin_time:04d}", '%m/%d/%Y %H%M')
-                    noaa_event_end_time = datetime.strptime(f"{noaa_event.end_date} {noaa_event.end_time:04d}", '%m/%d/%Y %H%M')
+                if eagle_i_time < noaa_event_start_time:
+                    non_match_counter += 1
+                    break  # No further NOAA events will match this Eagle I event
 
-                    if noaa_event_start_time <= eagle_i_time <= noaa_event_end_time:
-                        filtered_events.append(eagle_i_event)
-                        print(f"Match found: Eagle I event in {eagle_i_county} on {eagle_i_time} matches NOAA event in {noaa_region}.")
-                        match_found = True
-                        break  # Stop checking further once a match is found
+                if noaa_event_start_time <= eagle_i_time <= noaa_event_end_time:
+                    filtered_events.append(eagle_i_event)  # Match found
+                    print(f"Match found: Eagle I event in {region} on {eagle_i_time} matches NOAA event between {noaa_event_start_time} and {noaa_event_end_time}.")
+                    match_found = True
+                    break  # Move to next Eagle I event
+
+                last_checked_index_per_region[region] = i  # Update last checked index
 
             if not match_found:
                 non_match_counter += 1
-                # Print an update for every 20 non-matching events
-                if non_match_counter % 10000 == 0:
+                if non_match_counter % 30000 == 0:
                     print(f"Checked {non_match_counter} non-matching events so far.")
 
         print(f"Filtered {len(filtered_events)} matching Eagle I events from {len(eagle_i_events)} original events.")
         return filtered_events
-
-
+    
     @staticmethod
     def assign_eagle_i_events_to_hazards(hazards, eagle_i_events, noaa_to_eaglei_mapping):
         for hazard in hazards:
@@ -108,7 +125,6 @@ class EagleIEvent(DataSource):
             for event in filtered_eagle_i_events:
                 hazard.add_eaglei_event(event)
             print(f"Added {len(filtered_eagle_i_events)} Eagle I events to {hazard.type_of_hazard}.")
-
 
     @staticmethod
     def print_samples(eagle_i_events, sample_size=30):

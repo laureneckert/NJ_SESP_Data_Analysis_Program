@@ -135,7 +135,6 @@ class NOAAEvent(DataSource):
         return noaa_events
 
     @staticmethod
-    @staticmethod
     def assign_and_link_noaa_events_to_hazard(noaa_event_groups):
         """
         Assigns and links NOAA events to their corresponding hazards based on a mapping.
@@ -155,7 +154,7 @@ class NOAAEvent(DataSource):
 
             # Print success message after processing all events for a hazard
             print(f"Successfully assigned {count} NOAA events to {hazard.type_of_hazard}.")
-
+            """
             try:
                 # Update hazard data
                 pickle_path = config['pickle_paths'][hazard.type_of_hazard.lower()]
@@ -163,10 +162,8 @@ class NOAAEvent(DataSource):
                 print(f"{hazard.type_of_hazard} data successfully updated and saved.")
             except Exception as e:
                 print(f"Error in saving updated data for {hazard.type_of_hazard}: {e}")
-
+            """
         print("NOAA events assignment and linking process completed.")
-
-
 
     @staticmethod
     def get_unique_noaa_regions(hazards):
@@ -223,7 +220,6 @@ class NOAAEvent(DataSource):
             for event in hazard.noaa_events:
                 if str(event.cz_name_str) in cz_name_str_values:
                     print(f"File: {event.filename}, Line: {event.line_number}, Event ID: {event.event_id}, CZ Name: {event.cz_name_str}")
-
 
     @staticmethod
     def print_samples(noaa_events, sample_size=5):

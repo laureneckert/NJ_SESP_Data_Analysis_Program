@@ -5,7 +5,7 @@
 import pandas as pd
 import utilities as uti
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 class StormSystem:
     def __init__(self, year, start_date, end_date, storm_name, occurrence=1, storm_type=None, intensity=None, comment=None):
@@ -109,11 +109,24 @@ class StormSystem:
         return storm_systems
     
     def calculate_peak_outages(self, eaglei_events):
-        peak_outages_by_county = {}
+        self.peak_outages_by_county = {}
+        self.total_peak_outages = 0
+
         for event in eaglei_events:
-            if event.run_start_time >= self.start_date and event.run_end_time <= self.end_date:
-                if event.county in peak_outages_by_county:
-                    peak_outages_by_county[event.county] = max(peak_outages_by_county[event.county], event.outage)
+            # Ensure the event is within the storm system's timeframe
+            event_time = event['run_start_time']
+            if isinstance(event_time, str):
+                event_time = datetime.strptime(event_time, '%Y-%m-%d %H:%M:%S')
+            elif isinstance(event_time, pd.Timestamp):
+                event_time = event_time.to_pydatetime()
+
+            if event_time >= self.start_date and event_time <= self.end_date:
+                county = event['county']
+                outage = event['sum']  # Assuming the key for outage is 'sum'
+
+                if county in self.peak_outages_by_county:
+                    self.peak_outages_by_county[county] = max(self.peak_outages_by_county[county], outage)
                 else:
-                    peak_outages_by_county[event.county] = event.outage
-        return sum(peak_outages_by_county.values())
+                    self.peak_outages_by_county[county] = outage
+
+        self.total_peak_outages = sum(self.peak_outages_by_county.values())
