@@ -57,12 +57,12 @@ else:
 storm_systems = StormSystem.load_or_create( # Load or create StormSystem objects for hurricane storms
     config['pickle_paths']['storm_systems'],
     config['data_paths']['hurricanes']['storm_systems_file'],
-    force_recreate=True
+    force_recreate=False
 )
 #Load or create hazard objects with default values
-hurricanes = NaturalHazard.load_or_create(config['pickle_paths']['hurricanes'], Hurricane, force_recreate=True)
+hurricanes = NaturalHazard.load_or_create(config['pickle_paths']['hurricanes'], Hurricane, force_recreate=False)
 
-update_hurricanes_storm_systems_flag = True # Do you want to link the storm systems to the hurricanes hazard and then update the hurricanes pickle?
+update_hurricanes_storm_systems_flag = False # Do you want to link the storm systems to the hurricanes hazard and then update the hurricanes pickle?
 if update_hurricanes_storm_systems_flag: # Check the flag before proceeding
     print("Updating Hurricanes with new Storm Systems...")
     
@@ -98,7 +98,7 @@ noaa_event_groups = {
     # Add other mappings as needed
 }
 
-sort_and_assign_then_save = True
+sort_and_assign_then_save = False
 if sort_and_assign_then_save:
     print("Beginning sorting and assigning data sources to hazards")
 
@@ -147,6 +147,8 @@ uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
 
 pickle_path_for_storm_systems = config['pickle_paths']['storm_systems']
 uti.save_to_pickle(storm_systems, pickle_path_for_storm_systems)
+
+
 """
 # Loop through storm systems and plot outages
 for storm in hurricanes.storm_systems:
