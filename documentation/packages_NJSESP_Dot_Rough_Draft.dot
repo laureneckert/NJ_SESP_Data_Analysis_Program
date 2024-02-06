@@ -1,0 +1,45 @@
+digraph "packages_NJSESP_Dot_Rough_Draft" {
+rankdir=BT
+charset="utf-8"
+"NJ_SESP_Data_Analysis_Program" [color="black", label=<NJ_SESP_Data_Analysis_Program>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.DataSource" [color="black", label=<NJ_SESP_Data_Analysis_Program.DataSource>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.EagleIEvent" [color="black", label=<NJ_SESP_Data_Analysis_Program.EagleIEvent>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.FEMA_NRI_data" [color="black", label=<NJ_SESP_Data_Analysis_Program.FEMA_NRI_data>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.NOAAEvent" [color="black", label=<NJ_SESP_Data_Analysis_Program.NOAAEvent>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.documentation_generator" [color="black", label=<NJ_SESP_Data_Analysis_Program.documentation_generator>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.driver" [color="black", label=<NJ_SESP_Data_Analysis_Program.driver>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.hazard" [color="black", label=<NJ_SESP_Data_Analysis_Program.hazard>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.hurricanes" [color="black", label=<NJ_SESP_Data_Analysis_Program.hurricanes>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.natural_hazard" [color="black", label=<NJ_SESP_Data_Analysis_Program.natural_hazard>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.njsesp_config" [color="black", label=<NJ_SESP_Data_Analysis_Program.njsesp_config>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.storm_system" [color="black", label=<NJ_SESP_Data_Analysis_Program.storm_system>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.utilities" [color="black", label=<NJ_SESP_Data_Analysis_Program.utilities>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.DataSource" -> "NJ_SESP_Data_Analysis_Program.utilities" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.EagleIEvent" -> "NJ_SESP_Data_Analysis_Program.DataSource" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.EagleIEvent" -> "NJ_SESP_Data_Analysis_Program.njsesp_config" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.EagleIEvent" -> "NJ_SESP_Data_Analysis_Program.utilities" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.FEMA_NRI_data" -> "NJ_SESP_Data_Analysis_Program.DataSource" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.NOAAEvent" -> "NJ_SESP_Data_Analysis_Program.DataSource" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.NOAAEvent" -> "NJ_SESP_Data_Analysis_Program.hazard" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.NOAAEvent" -> "NJ_SESP_Data_Analysis_Program.natural_hazard" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.NOAAEvent" -> "NJ_SESP_Data_Analysis_Program.njsesp_config" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.NOAAEvent" -> "NJ_SESP_Data_Analysis_Program.utilities" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.driver" -> "NJ_SESP_Data_Analysis_Program.DataSource" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.driver" -> "NJ_SESP_Data_Analysis_Program.EagleIEvent" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.driver" -> "NJ_SESP_Data_Analysis_Program.FEMA_NRI_data" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.driver" -> "NJ_SESP_Data_Analysis_Program.NOAAEvent" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.driver" -> "NJ_SESP_Data_Analysis_Program.hazard" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.driver" -> "NJ_SESP_Data_Analysis_Program.hurricanes" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.driver" -> "NJ_SESP_Data_Analysis_Program.natural_hazard" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.driver" -> "NJ_SESP_Data_Analysis_Program.njsesp_config" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.driver" -> "NJ_SESP_Data_Analysis_Program.storm_system" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.driver" -> "NJ_SESP_Data_Analysis_Program.utilities" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.hurricanes" -> "NJ_SESP_Data_Analysis_Program.natural_hazard" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.natural_hazard" -> "NJ_SESP_Data_Analysis_Program.EagleIEvent" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.natural_hazard" -> "NJ_SESP_Data_Analysis_Program.FEMA_NRI_data" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.natural_hazard" -> "NJ_SESP_Data_Analysis_Program.NOAAEvent" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.natural_hazard" -> "NJ_SESP_Data_Analysis_Program.hazard" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.natural_hazard" -> "NJ_SESP_Data_Analysis_Program.utilities" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.storm_system" -> "NJ_SESP_Data_Analysis_Program.utilities" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.utilities" -> "NJ_SESP_Data_Analysis_Program.njsesp_config" [arrowhead="open", arrowtail="none"];
+}
