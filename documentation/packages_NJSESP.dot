@@ -1,4 +1,4 @@
-digraph "packages_NJSESP_Dot_Rough_Draft" {
+digraph "packages_NJSESP" {
 rankdir=BT
 charset="utf-8"
 "NJ_SESP_Data_Analysis_Program" [color="black", label=<NJ_SESP_Data_Analysis_Program>, shape="box", style="solid"];
@@ -13,7 +13,9 @@ charset="utf-8"
 "NJ_SESP_Data_Analysis_Program.natural_hazard" [color="black", label=<NJ_SESP_Data_Analysis_Program.natural_hazard>, shape="box", style="solid"];
 "NJ_SESP_Data_Analysis_Program.njsesp_config" [color="black", label=<NJ_SESP_Data_Analysis_Program.njsesp_config>, shape="box", style="solid"];
 "NJ_SESP_Data_Analysis_Program.storm_system" [color="black", label=<NJ_SESP_Data_Analysis_Program.storm_system>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.tornados" [color="black", label=<NJ_SESP_Data_Analysis_Program.tornados>, shape="box", style="solid"];
 "NJ_SESP_Data_Analysis_Program.utilities" [color="black", label=<NJ_SESP_Data_Analysis_Program.utilities>, shape="box", style="solid"];
+"NJ_SESP_Data_Analysis_Program.winter_storms" [color="black", label=<NJ_SESP_Data_Analysis_Program.winter_storms>, shape="box", style="solid"];
 "NJ_SESP_Data_Analysis_Program.DataSource" -> "NJ_SESP_Data_Analysis_Program.utilities" [arrowhead="open", arrowtail="none"];
 "NJ_SESP_Data_Analysis_Program.EagleIEvent" -> "NJ_SESP_Data_Analysis_Program.DataSource" [arrowhead="open", arrowtail="none"];
 "NJ_SESP_Data_Analysis_Program.EagleIEvent" -> "NJ_SESP_Data_Analysis_Program.njsesp_config" [arrowhead="open", arrowtail="none"];
@@ -41,5 +43,7 @@ charset="utf-8"
 "NJ_SESP_Data_Analysis_Program.natural_hazard" -> "NJ_SESP_Data_Analysis_Program.hazard" [arrowhead="open", arrowtail="none"];
 "NJ_SESP_Data_Analysis_Program.natural_hazard" -> "NJ_SESP_Data_Analysis_Program.utilities" [arrowhead="open", arrowtail="none"];
 "NJ_SESP_Data_Analysis_Program.storm_system" -> "NJ_SESP_Data_Analysis_Program.utilities" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.tornados" -> "NJ_SESP_Data_Analysis_Program.natural_hazard" [arrowhead="open", arrowtail="none"];
 "NJ_SESP_Data_Analysis_Program.utilities" -> "NJ_SESP_Data_Analysis_Program.njsesp_config" [arrowhead="open", arrowtail="none"];
+"NJ_SESP_Data_Analysis_Program.winter_storms" -> "NJ_SESP_Data_Analysis_Program.natural_hazard" [arrowhead="open", arrowtail="none"];
 }

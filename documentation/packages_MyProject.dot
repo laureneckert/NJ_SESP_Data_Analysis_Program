@@ -28,23 +28,33 @@ digraph "packages_MyProject" {
         "NJ_SESP_Data_Analysis_Program.hazard" [shape="box", style="solid"];
         "NJ_SESP_Data_Analysis_Program.natural_hazard" [shape="box", style="solid"];
         "NJ_SESP_Data_Analysis_Program.hurricanes" [shape="box", style="solid"];
-
+        "NJ_SESP_Data_Analysis_Program.tornados" [shape="box", style="solid"];
+        "NJ_SESP_Data_Analysis_Program.winter_storms" [shape="box", style="solid"];
+        "NJ_SESP_Data_Analysis_Program.storm_system" [shape="box", style="solid"];
+        
         // Inheritance relationships within Hazards
         "NJ_SESP_Data_Analysis_Program.natural_hazard" -> "NJ_SESP_Data_Analysis_Program.hazard" [arrowhead="empty"];
         "NJ_SESP_Data_Analysis_Program.hurricanes" -> "NJ_SESP_Data_Analysis_Program.natural_hazard" [arrowhead="empty"];
+        "NJ_SESP_Data_Analysis_Program.winter_storms" -> "NJ_SESP_Data_Analysis_Program.natural_hazard" [arrowhead="empty"];
+        "NJ_SESP_Data_Analysis_Program.tornados" -> "NJ_SESP_Data_Analysis_Program.natural_hazard" [arrowhead="empty"];
+    }
+
+    // Subgraph for Miscellaneous Classes
+    subgraph cluster_Misc {
+        label="Miscellaneous";
+        style=filled;
+        color=lightyellow;
+
+        "NJ_SESP_Data_Analysis_Program.utilities" [shape="box", style="solid"];
+        "NJ_SESP_Data_Analysis_Program.njsesp_config" [shape="box", style="solid"];
+        "NJ_SESP_Data_Analysis_Program.documentation_generator" [shape="box", style="solid"];
+        "NJ_SESP_Data_Analysis_Program.driver" [shape="box", style="solid"];
     }
 
     // Other packages
-    "NJ_SESP_Data_Analysis_Program" [shape="box", style="solid"];
-    "NJ_SESP_Data_Analysis_Program.storm_system" [shape="box", style="solid"];
-    "NJ_SESP_Data_Analysis_Program.utilities" [shape="box", style="solid"];
-    "NJ_SESP_Data_Analysis_Program.njsesp_config" [shape="box", style="solid"];
-    "NJ_SESP_Data_Analysis_Program.documentation_generator" [shape="box", style="solid"];
-    "NJ_SESP_Data_Analysis_Program.driver" [shape="box", style="solid"];
 
     // Associations and Dependencies
     "NJ_SESP_Data_Analysis_Program.storm_system" -> "NJ_SESP_Data_Analysis_Program.utilities" [style="dashed"];
     "NJ_SESP_Data_Analysis_Program.utilities" -> "NJ_SESP_Data_Analysis_Program.njsesp_config" [style="dashed"];
     "NJ_SESP_Data_Analysis_Program.driver" -> "NJ_SESP_Data_Analysis_Program.DataSource" [style="dashed"];
-    // ... add other associations and dependencies as required
 }

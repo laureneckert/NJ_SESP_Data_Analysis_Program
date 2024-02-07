@@ -23,19 +23,33 @@ digraph "classes_MyProject" {
         "NJ_SESP_Data_Analysis_Program.hazard.Hazard" [shape="record", style="italic", label=<{Hazard|customers_affected_sum : int<br ALIGN="LEFT"/>frequency_coefficient : float<br ALIGN="LEFT"/>future_impact_coefficient : float<br ALIGN="LEFT"/>historical_frequency : float<br ALIGN="LEFT"/>historical_frequency_type : str<br ALIGN="LEFT"/>impact_coefficient : float<br ALIGN="LEFT"/>percent_customers_affected : float<br ALIGN="LEFT"/>property_damage_by_county : dict<br ALIGN="LEFT"/>risk_score : float<br ALIGN="LEFT"/>time_duration_customer_affected_annualized : float<br ALIGN="LEFT"/>total_property_damage : float<br ALIGN="LEFT"/>total_property_damage_annualized : float<br ALIGN="LEFT"/>total_time_duration_customer_affected : float<br ALIGN="LEFT"/>type_of_hazard<br ALIGN="LEFT"/>|<I>calculate_risk</I>()<br ALIGN="LEFT"/><I>calculate_scores</I>()<br ALIGN="LEFT"/><I>print_basic_info</I>()<br ALIGN="LEFT"/>}>, shape="record", style="solid"];
         "NJ_SESP_Data_Analysis_Program.natural_hazard.NaturalHazard" [shape="record", style="solid", label=<{NaturalHazard|NRI_data_fields : dict<br ALIGN="LEFT"/>eaglei_events : list<br ALIGN="LEFT"/>noaa_event_count : int<br ALIGN="LEFT"/>noaa_events : list<br ALIGN="LEFT"/>outage_duration_by_county : dict<br ALIGN="LEFT"/>outage_total_by_county : dict<br ALIGN="LEFT"/>percent_customers_affected : float<br ALIGN="LEFT"/>total_duration_eaglei : int<br ALIGN="LEFT"/>total_outages_sum : int<br ALIGN="LEFT"/>unique_eaglei_regions : set<br ALIGN="LEFT"/>unique_noaa_event_types : set<br ALIGN="LEFT"/>unique_noaa_regions : set<br ALIGN="LEFT"/>|add_eaglei_event(eaglei_event)<br ALIGN="LEFT"/>add_noaa_event(noaa_event)<br ALIGN="LEFT"/>calculate_percent_customers_affected()<br ALIGN="LEFT"/>calculate_probability(hazard_prefix)<br ALIGN="LEFT"/>calculate_property_damage(hazard_prefix)<br ALIGN="LEFT"/><I>calculate_scores</I>()<br ALIGN="LEFT"/><I>calculate_statistics</I>(noaa_to_eaglei_mapping)<br ALIGN="LEFT"/><I>calculate_total_eaglei_outage_duration</I>(outage_sum)<br ALIGN="LEFT"/><I>create_default_instances</I>()<br ALIGN="LEFT"/>load_or_create(pickle_path, subclass, force_recreate)<br ALIGN="LEFT"/><I>print_basic_info</I>()<br ALIGN="LEFT"/>print_data_source_samples(sample_size)<br ALIGN="LEFT"/>}>, shape="record", style="solid"];
         "NJ_SESP_Data_Analysis_Program.hurricanes.Hurricane" [shape="record", style="solid", label=<{Hurricane|NRI_data_fields : dict<br ALIGN="LEFT"/>customers_affected_sum : int<br ALIGN="LEFT"/>eaglei_events : list<br ALIGN="LEFT"/>frequency_coefficient : float<br ALIGN="LEFT"/>future_impact_coefficient : float<br ALIGN="LEFT"/>historical_frequency : float<br ALIGN="LEFT"/>impact_coefficient : float<br ALIGN="LEFT"/>intensity_coefficient<br ALIGN="LEFT"/>noaa_event_count : int<br ALIGN="LEFT"/>noaa_events : list<br ALIGN="LEFT"/>outage_duration_by_county : dict<br ALIGN="LEFT"/>outage_total_by_county : dict<br ALIGN="LEFT"/>percent_customers_affected : float<br ALIGN="LEFT"/>property_damage_by_county : dict<br ALIGN="LEFT"/>risk_score : float<br ALIGN="LEFT"/>storm_systems : list<br ALIGN="LEFT"/>time_duration_customer_affected_annualized : float<br ALIGN="LEFT"/>total_duration_eaglei : int<br ALIGN="LEFT"/>total_outages_sum : int<br ALIGN="LEFT"/>total_property_damage : float<br ALIGN="LEFT"/>total_property_damage_annualized : float<br ALIGN="LEFT"/>total_time_duration_customer_affected : float<br ALIGN="LEFT"/>unique_eaglei_regions : set<br ALIGN="LEFT"/>unique_noaa_event_types : set<br ALIGN="LEFT"/>unique_noaa_regions : set<br ALIGN="LEFT"/>|add_storm_system(storm_system)<br ALIGN="LEFT"/>analyze_hurricane_data()<br ALIGN="LEFT"/>calculate_average_peak_outages()<br ALIGN="LEFT"/>calculate_regression_coefficients()<br ALIGN="LEFT"/>create_default_instances()<br ALIGN="LEFT"/>print_basic_info()<br ALIGN="LEFT"/>}>, shape="record", style="solid"];
+        "NJ_SESP_Data_Analysis_Program.tornados.Tornados" [shape="record", style="solid", label=<{Tornados|<br ALIGN="LEFT"/>|}>, shape="record", style="solid"];
+        "NJ_SESP_Data_Analysis_Program.winter_storms.WinterStorms" [shape="record", style="solid", label=<{WinterStorms|<br ALIGN="LEFT"/>|}>, shape="record", style="solid"];
+        "NJ_SESP_Data_Analysis_Program.storm_system.StormSystem" [shape="record", style="solid", label=<{StormSystem|NOAA_database_search_link : str<br ALIGN="LEFT"/>comment : NoneType<br ALIGN="LEFT"/>end_date<br ALIGN="LEFT"/>intensity : NoneType<br ALIGN="LEFT"/>occurrence : int<br ALIGN="LEFT"/>peak_outages_by_county : dict<br ALIGN="LEFT"/>start_date<br ALIGN="LEFT"/>storm_name<br ALIGN="LEFT"/>storm_type : NoneType<br ALIGN="LEFT"/>total_peak_outages : int<br ALIGN="LEFT"/>year<br ALIGN="LEFT"/>|calculate_peak_outages(eaglei_events)<br ALIGN="LEFT"/>extract_data(file_path)<br ALIGN="LEFT"/>find_storm_system_by_name_and_occurrence(storm_name, occurrence)<br ALIGN="LEFT"/>load_or_create(pickle_path, excel_file_path, force_recreate)<br ALIGN="LEFT"/>plot_outages_over_time(all_eaglei_events)<br ALIGN="LEFT"/>print_basic_info()<br ALIGN="LEFT"/>}>, shape="record", style="solid"];
+    }
+    
+    // Subgraph for Miscellaneous Classes
+    subgraph cluster_Misc {
+        label="Miscellaneous";
+        style=filled;
+        color=lightyellow;
+
+        "NJ_SESP_Data_Analysis_Program.utilities" [shape="box", label="utilities"];
+        "NJ_SESP_Data_Analysis_Program.njsesp_config" [shape="box", label="njsesp_config"];
+        "NJ_SESP_Data_Analysis_Program.driver" [shape="box", label="driver"];
     }
 
-    // Other Classes
-    "NJ_SESP_Data_Analysis_Program.storm_system.StormSystem" [shape="record", style="solid", label=<{StormSystem|...additional attributes and methods...}>];
-    "NJ_SESP_Data_Analysis_Program.utilities" [shape="box", label="utilities"];
-    "NJ_SESP_Data_Analysis_Program.njsesp_config" [shape="box", label="njsesp_config"];
-
     // Inheritance
+        //Data sources
     "NJ_SESP_Data_Analysis_Program.NOAAEvent.NOAAEvent" -> "NJ_SESP_Data_Analysis_Program.DataSource.DataSource" [arrowhead="empty"];
     "NJ_SESP_Data_Analysis_Program.EagleIEvent.EagleIEvent" -> "NJ_SESP_Data_Analysis_Program.DataSource.DataSource" [arrowhead="empty"];
     "NJ_SESP_Data_Analysis_Program.FEMA_NRI_data.FEMA_NRI_data" -> "NJ_SESP_Data_Analysis_Program.DataSource.DataSource" [arrowhead="empty"];
+    
+        //Hazards
     "NJ_SESP_Data_Analysis_Program.natural_hazard.NaturalHazard" -> "NJ_SESP_Data_Analysis_Program.hazard.Hazard" [arrowhead="empty"];
     "NJ_SESP_Data_Analysis_Program.hurricanes.Hurricane" -> "NJ_SESP_Data_Analysis_Program.natural_hazard.NaturalHazard" [arrowhead="empty"];
+    "NJ_SESP_Data_Analysis_Program.winter_storms.WinterStorms" -> "NJ_SESP_Data_Analysis_Program.natural_hazard.NaturalHazard" [arrowhead="empty"];
+    "NJ_SESP_Data_Analysis_Program.tornados.Tornados" -> "NJ_SESP_Data_Analysis_Program.natural_hazard.NaturalHazard" [arrowhead="empty"];
 
     // Composition
     "NJ_SESP_Data_Analysis_Program.hurricanes.Hurricane" -> "NJ_SESP_Data_Analysis_Program.storm_system.StormSystem" [arrowhead="odiamond", style="solid"];
