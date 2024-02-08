@@ -5,6 +5,7 @@
 #hazards class
 
 from abc import ABC, abstractmethod
+import utilities as uti
 
 class Hazard(ABC):
     def __init__(self, type_of_hazard):
@@ -35,10 +36,12 @@ class Hazard(ABC):
         # Risk score
         self.risk_score = 0.0
 
+    @abstractmethod
     def calculate_risk(self):
         # Placeholder for risk calculation method
         pass
-
+    
+    @abstractmethod
     def calculate_scores(self):
         # Placeholder for method that calculates various scores
         pass

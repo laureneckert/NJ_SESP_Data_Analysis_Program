@@ -54,12 +54,17 @@ digraph "classes_MyProject" {
     // Composition
     "NJ_SESP_Data_Analysis_Program.hurricanes.Hurricane" -> "NJ_SESP_Data_Analysis_Program.storm_system.StormSystem" [arrowhead="odiamond", style="solid"];
 
-    // Associations and Dependencies
-    // Represent dependencies and associations with dashed lines
-    // Example:
-    "NJ_SESP_Data_Analysis_Program.hurricanes.Hurricane" -> "NJ_SESP_Data_Analysis_Program.utilities" [style="dashed"];
+    // Dependencies
+
+    //utilities
     "NJ_SESP_Data_Analysis_Program.natural_hazard.NaturalHazard" -> "NJ_SESP_Data_Analysis_Program.utilities" [style="dashed"];
+    "NJ_SESP_Data_Analysis_Program.DataSource.DataSource" -> "NJ_SESP_Data_Analysis_Program.utilities" [style="dashed"];
+    "NJ_SESP_Data_Analysis_Program.storm_system.StormSystem" -> "NJ_SESP_Data_Analysis_Program.utilities" [style="dashed"];
+
+    //njsesp_config
     "NJ_SESP_Data_Analysis_Program.NOAAEvent.NOAAEvent" -> "NJ_SESP_Data_Analysis_Program.njsesp_config" [style="dashed"];
     "NJ_SESP_Data_Analysis_Program.EagleIEvent.EagleIEvent" -> "NJ_SESP_Data_Analysis_Program.njsesp_config" [style="dashed"];
     "NJ_SESP_Data_Analysis_Program.FEMA_NRI_data.FEMA_NRI_data" -> "NJ_SESP_Data_Analysis_Program.njsesp_config" [style="dashed"];
+    "NJ_SESP_Data_Analysis_Program.utilities" -> "NJ_SESP_Data_Analysis_Program.njsesp_config" [style="dashed"];
+
 }

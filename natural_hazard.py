@@ -6,9 +6,6 @@ from abc import ABC, abstractmethod
 from hazard import Hazard
 import utilities as uti
 import os
-import EagleIEvent
-import NOAAEvent
-import FEMA_NRI_data
 
 class NaturalHazard(Hazard):
     def __init__(self, type_of_hazard):
@@ -29,15 +26,17 @@ class NaturalHazard(Hazard):
         self.total_duration_eaglei = 0
         self.outage_duration_by_county = {}
 
-
+    @abstractmethod
     def calculate_statistics(self, noaa_to_eaglei_mapping):
         # Placeholder for method that calculates statistics based on NOAA and EagleI data
         pass
 
+    @abstractmethod
     def calculate_total_eaglei_outage_duration(self, outage_sum):
         # Placeholder for method that calculates total EagleI outage duration
         pass
 
+    @abstractmethod
     def calculate_scores(self):
         # Override the method from the parent class
         pass

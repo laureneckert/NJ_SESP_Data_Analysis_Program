@@ -7,8 +7,7 @@ from datetime import datetime
 from collections import defaultdict
 import os
 from DataSource import DataSource
-import utilities as uti
-import njsesp_config as config
+
 
 class EagleIEvent(DataSource):
     def __init__(self, fips_code, county, state, sum, run_start_time):

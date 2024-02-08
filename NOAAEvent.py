@@ -7,11 +7,6 @@
 import pandas as pd
 import os
 from DataSource import DataSource
-import utilities as uti
-from datetime import datetime
-import njsesp_config as config
-import hazard
-import natural_hazard
 
 class NOAAEvent(DataSource):
     def __init__(self, event_id, cz_name_str, begin_location, begin_date, begin_time, event_type, magnitude, tor_f_scale, deaths_direct,
@@ -187,7 +182,7 @@ class NOAAEvent(DataSource):
         return unique_regions
 
     @staticmethod
-    def count_noaa_events_missing_cz_name(hazards):
+    def count_noaa_events_missing_cz_name(hazards): #useful for finding the weird bug that occasionally appears in NOAA data source
         """
         Counts NOAA events with missing 'cz_name_str' in a list of hazards.
 

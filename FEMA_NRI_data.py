@@ -320,9 +320,6 @@ class FEMA_NRI_data(DataSource):
         if len(fema_nri_data_list) > sample_size:
             print(f"\n... and {len(fema_nri_data_list) - sample_size} more entries.")
 
-
-
-
     @staticmethod
     def assign_data_to_hazard(hazards, fema_nri_entries, fema_to_hazard_mapping):
         """
@@ -356,7 +353,6 @@ class FEMA_NRI_data(DataSource):
             else:
                 print(f"No FEMA data mapping found for {hazard_type} hazard.")
 
-
     # Mapping of hazard types to their FEMA NRI data prefixes
     hazard_to_fema_prefix = {
         'hurricanes': ['HRCN'],               # Hurricane
@@ -373,7 +369,7 @@ class FEMA_NRI_data(DataSource):
         'tsunami': ['TSUN'],                 # Tsunami
         'volcanic_activity': ['VLCN'],       # Volcanic Activity
         'wildfire': ['WFIR'],                # Wildfire
-        'winter_storms': ['CWAV', 'ISTM', 'WNTW'],  # Winter Storms (Cold Wave, Ice Storm, Winter Weather)
+        'winter_storms': ['CWAV', 'ISTM', 'WNTW'],  # Winter Storms (Cold Wave, Ice Storm, Winter Weather) #three prefixes might cause a bug - need to verify when doing winter storms
     }
 
     def print_data_source_samples(self, sample_size=5):
