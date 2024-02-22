@@ -24,7 +24,6 @@ class StormSystem:
         self.peak_outages_by_county = {}  # Stores peak outages for each county
         self.total_peak_outages = 0  # Stores total peak outages for the storm system
 
-
     @staticmethod
     def extract_data(file_path):
         """

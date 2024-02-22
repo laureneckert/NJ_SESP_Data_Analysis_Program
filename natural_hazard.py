@@ -26,24 +26,27 @@ class NaturalHazard(Hazard):
         self.total_duration_eaglei = 0
         self.outage_duration_by_county = {}
 
-    @abstractmethod
     def calculate_statistics(self, noaa_to_eaglei_mapping):
         # Placeholder for method that calculates statistics based on NOAA and EagleI data
+        # Default implementation for natural hazards
+        # Implement generic behavior here
         pass
 
-    @abstractmethod
-    def calculate_total_eaglei_outage_duration(self, outage_sum):
-        # Placeholder for method that calculates total EagleI outage duration
-        pass
-
-    @abstractmethod
     def calculate_scores(self):
         # Override the method from the parent class
+        # Default implementation for natural hazards
+        # Implement generic behavior here
         pass
 
-    @abstractmethod
-    def print_basic_info(self):
+    def calculate_risk(self):
+        # Default implementation for natural hazards
+        # Implement generic behavior here
         pass
+
+    def print_basic_info(self):
+        # Default implementation for natural hazards
+        # Implement generic behavior here
+        print(f"Natural Hazard: {self.type_of_hazard}")
 
     def add_noaa_event(self, noaa_event):
         """
@@ -168,3 +171,15 @@ class NaturalHazard(Hazard):
                 count += 1
 
         return total_frequency / count if count > 0 else 0.0
+    
+    def calculate_total_eaglei_outage_duration(self):
+        # Sum of outages in Eagle I events
+        total_outages = sum(event['sum'] for event in self.eaglei_events if 'sum' in event)
+
+        # Convert the total sum of outages to duration in minutes (each unit is 15 minutes)
+        total_duration_minutes = total_outages * 15
+
+        # Convert minutes to hours
+        total_duration_hours = total_duration_minutes / 60
+
+        return total_duration_hours

@@ -95,7 +95,7 @@ class Hurricane(NaturalHazard):
             year_intensity_sum[year] = year_intensity_sum.get(year, 0) + storm.intensity
             year_intensity_count[year] = year_intensity_count.get(year, 0) + 1
 
-        years = []
+        years = [] #fix logic for averaging intensity by year, its not necessary to average by year just plot the intensities and then get the line from that
         frequencies = []
         average_intensities = []
 
@@ -147,7 +147,7 @@ class Hurricane(NaturalHazard):
 
         return self.frequency_coefficient, self.intensity_coefficient
     
-    def analyze_hurricane_data(self):
+    def analyze_hurricane_data(self): #needs to be refactored for all natural hazards
         hazard_prefix = "HRCN"
         total_property_damage = self.calculate_property_damage(hazard_prefix)
         annualized_frequency = self.calculate_probability(hazard_prefix)
@@ -155,3 +155,23 @@ class Hurricane(NaturalHazard):
         print(f"Total Property Damage for Hurricanes: {total_property_damage}")
         print(f"Annualized Frequency (Probability) of Hurricanes: {annualized_frequency}")
 
+    def calculate_statistics(self, noaa_to_eaglei_mapping):
+        # Specific implementation for hurricanes
+        # Implement hurricane-specific behavior here
+        pass
+
+    def calculate_scores(self):
+        # Specific implementation for hurricanes
+        # Implement hurricane-specific behavior here
+        pass
+
+    def calculate_risk(self):
+        # Specific implementation for hurricanes
+        # Implement hurricane-specific risk calculation here
+        pass
+
+    def print_basic_info(self):
+        # Specific implementation for hurricanes
+        print(f"Hurricane Hazard Summary:")
+        print(f"Type of Hazard: {self.type_of_hazard}")
+        # Include more specific details as needed

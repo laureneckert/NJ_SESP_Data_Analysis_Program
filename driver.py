@@ -1,6 +1,7 @@
 #NJSESP Project
 #Lauren Eckert
 #Version 2
+#driver
 
 import os
 import utilities as uti
@@ -78,7 +79,7 @@ else:
     print("Update Hurricanes flag is set to False. Skipping update.")
 
 #verification step
-print_data_2 = True # Print a summary of hurricane data?
+print_data_2 = False # Print a summary of hurricane data?
 if print_data_2:
     if hurricanes:
         hurricanes.print_basic_info() 
@@ -131,27 +132,37 @@ for hazard in hazards:
     hazard.print_data_source_samples(sample_size=5) # Print samples of each data source organized by hazard
 
 #Step 5: Data processing for natural hazards
-    
-# Calculate the average peak outages and percent customers affected
-hurricanes.calculate_average_peak_outages()
-hurricanes.calculate_percent_customers_affected()
-# Print the result for verification
+"""
+#Hurricanes   
+hurricanes.calculate_average_peak_outages() #NOT CORRECT LOL IM DUMB
+hurricanes.calculate_percent_customers_affected()  #SEE ABOVE
+frequency_coefficient, intensity_coefficient = hurricanes.calculate_regression_coefficients() #pretty sure this ones fine tho
+hurricanes.analyze_hurricane_data() #need to adjust this function cause IT DONT WORK
+
+#Print the result for verification
 print(f"Average Peak Outages: {hurricanes.customers_affected_sum}")
 print(f"Percent Customers Affected: {hurricanes.percent_customers_affected}%")
 
-frequency_coefficient, intensity_coefficient = hurricanes.calculate_regression_coefficients()
 print(f"Frequency Coefficient: {frequency_coefficient}")
 print(f"Intensity Coefficient: {intensity_coefficient}")
+#print(f"Future Impact Coefficient: *****here")
 
-# Analyze hurricane data
-hurricanes.analyze_hurricane_data()
-
+#Save results
 pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
 uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
-
 pickle_path_for_storm_systems = config['pickle_paths']['storm_systems']
 uti.save_to_pickle(storm_systems, pickle_path_for_storm_systems)
+"""
 
+
+#Winter Storms
+
+
+
+#Lightning
+
+
+#In progress work
 
 """
 # Loop through storm systems and plot outages
@@ -161,3 +172,15 @@ for storm in hurricanes.storm_systems:
         storm.plot_outages_over_time(eagle_i_events)
         input("Press Enter to continue...")  # Wait for user input to proceed
 """
+
+# Calculating EWMA and seasonal baseline
+ewma_data = EagleIEvent.calculate_ewma(eagle_i_events)
+seasonal_baseline = EagleIEvent.calculate_seasonal_baseline(ewma_data)
+
+# Printing samples of the calculated data
+EagleIEvent.print_df_sample_data(ewma_data, sample_size=50)
+EagleIEvent.print_df_sample_data(seasonal_baseline, sample_size=80)# Call the method with flags set to your preference
+
+EagleIEvent.plot_outages_over_time_per_year(eagle_i_events, ewma_data, seasonal_baseline, noaa_hurricane_events, storm_systems, show_noaa_events=True, show_storm_systems=True)
+# Plot zoomed outages around storms
+EagleIEvent.plot_zoomed_outages_around_storms(eagle_i_events, ewma_data, seasonal_baseline, noaa_hurricane_events, storm_systems)
