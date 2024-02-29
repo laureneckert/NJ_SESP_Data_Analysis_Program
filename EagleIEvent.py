@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import itertools
 import statsmodels.api as sm
+from statsmodels.tsa.seasonal import STL
 import os
 from DataSource import DataSource
 from njsesp_config import config
@@ -183,7 +184,7 @@ class EagleIEvent(DataSource):
         return unique_counties
 
     @staticmethod
-    def plot_outages_over_time_per_year(eagle_i_events, ewma_data, seasonal_baseline, noaa_events, storm_systems, show_noaa_events=True, show_storm_systems=True):
+    def plot_outages_over_time_per_year(eagle_i_events, ewma_data, seasonal_baseline, noaa_events, storm_systems, cap_value, show_noaa_events=True, show_storm_systems=True):
         """
         Plots the Eagle I outages over time for each year and optionally marks the start and end dates of NOAA events and storm systems.
 
@@ -251,6 +252,9 @@ class EagleIEvent(DataSource):
                         color = next(storm_system_colors)
                         ax.axvspan(pd.to_datetime(system.start_date), pd.to_datetime(system.end_date), color=color, alpha=0.5, label=f'Storm: {system.storm_name}')
 
+            # Plot the cap value as a horizontal line
+            ax.axhline(y=cap_value, color='magenta', linestyle='--', label='Outlier Cap')
+
             # Formatting the plot
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
             ax.xaxis.set_major_locator(mdates.MonthLocator())
@@ -260,6 +264,7 @@ class EagleIEvent(DataSource):
             plt.ylabel('Outage Sum', fontsize=14)
             plt.legend()
             plt.tight_layout()
+            plt.show()
 
             # Determine the version number for the file
             version = 1
@@ -270,48 +275,54 @@ class EagleIEvent(DataSource):
             fig.savefig(os.path.join(plot_dir, f"outages_by_year_{year}_v{version}.png"))
             plt.close(fig)
 
-    
-    @staticmethod
+    @staticmethod #this isnt working - moving on from it but would like to go back and fix
     def plot_zoomed_outages_around_storms(eagle_i_events, ewma_data, seasonal_baseline, noaa_events, storm_systems):
         # Check for terminal output directory
         plot_dir = config['directories']['outages_plot_directory']
         if not os.path.exists(plot_dir):
             os.makedirs(plot_dir)
         
+        # Convert eagle_i_events to DataFrame and group by timestamp
+        df = pd.DataFrame(eagle_i_events)
+        df['run_start_time'] = pd.to_datetime(df['run_start_time'])
+        df_grouped = df.groupby('run_start_time').sum().reset_index()
+        
         for system in storm_systems:
             # Define the time window: 1 week before and after the storm system
             start_window = system.start_date - pd.Timedelta(days=7)
             end_window = system.end_date + pd.Timedelta(days=7)
+            
+            # Filter eagle i events within this window
+            window_mask = (df_grouped['run_start_time'] >= start_window) & (df_grouped['run_start_time'] <= end_window)
+            filtered_eagle_i_events = df_grouped[window_mask]
 
-            # Filter events within this window
-            filtered_eagle_i_events = [event for event in eagle_i_events if start_window <= pd.to_datetime(event['run_start_time']) <= end_window]
-            filtered_noaa_events = [event for event in noaa_events if start_window <= pd.to_datetime(event.begin_date) <= end_window]
+            # Filter and sum EWMA data within this window
+            ewma_mask = (ewma_data.index >= start_window) & (ewma_data.index <= end_window)
+            filtered_ewma = ewma_data[ewma_mask].groupby(ewma_data[ewma_mask].index).sum()
 
-            if not filtered_eagle_i_events:
-                print(f"No Eagle I data available for the window around {system.storm_name}")
-                continue
-
-            # Sort events and extract times and outages
-            filtered_eagle_i_events.sort(key=lambda x: pd.to_datetime(x['run_start_time']))
-            times = [pd.to_datetime(event['run_start_time']) for event in filtered_eagle_i_events]
-            outages = [event['sum'] for event in filtered_eagle_i_events]
-
+            # Filter and sum Seasonal Baseline data within this window
+            baseline_mask = (seasonal_baseline.index >= start_window) & (seasonal_baseline.index <= end_window)
+            filtered_baseline = seasonal_baseline[baseline_mask].groupby(seasonal_baseline[baseline_mask].index).sum()
+            
             # Plotting
             fig, ax = plt.subplots(figsize=(15, 7))
-            ax.plot_date(times, outages, 'b-', label='Eagle I Outages')
-
+            ax.plot_date(filtered_eagle_i_events['run_start_time'], filtered_eagle_i_events['sum'], 'b-', label='Eagle I Outages')
+            ax.plot(filtered_ewma.index, filtered_ewma, 'r-', label='EWMA')
+            ax.plot(filtered_baseline.index, filtered_baseline, 'g-', label='Seasonal Trendline')
+            
             # Mark NOAA events
             noaa_event_added = False
-            for noaa_event in filtered_noaa_events:
-                if not noaa_event_added:
-                    ax.axvspan(pd.to_datetime(noaa_event.begin_date), pd.to_datetime(noaa_event.end_date), color='orange', alpha=0.5, label='NOAA Event Period')
-                    noaa_event_added = True
-                else:
-                    ax.axvspan(pd.to_datetime(noaa_event.begin_date), pd.to_datetime(noaa_event.end_date), color='orange', alpha=0.5)
-
+            for noaa_event in noaa_events:
+                if start_window <= pd.to_datetime(noaa_event.begin_date) <= end_window:
+                    if not noaa_event_added:
+                        ax.axvspan(pd.to_datetime(noaa_event.begin_date), pd.to_datetime(noaa_event.end_date), color='orange', alpha=0.5, label='NOAA Event Period')
+                        noaa_event_added = True
+                    else:
+                        ax.axvspan(pd.to_datetime(noaa_event.begin_date), pd.to_datetime(noaa_event.end_date), color='orange', alpha=0.5)
+            
             # Highlight the storm system period
             ax.axvspan(system.start_date, system.end_date, color='cyan', alpha=0.5, label=f'Storm: {system.storm_name}')
-
+            
             # Formatting
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
             ax.xaxis.set_major_locator(mdates.DayLocator())
@@ -335,13 +346,16 @@ class EagleIEvent(DataSource):
             print(f"Saved figure to {fig_path}")
 
     @staticmethod
-    def calculate_ewma(eagle_i_events, span=12):
+    def calculate_ewma(eagle_i_events, span=48):
         """
         Calculates the exponentially weighted moving average (EWMA) for the outage data.
 
         Parameters:
         eagle_i_events (list): List of EagleIEvent objects.
         span (int): The span for EWMA calculation.
+
+        4 = 1 hour
+        48 = 12 hour
 
         Returns:
         pd.Series: EWMA of outages.
@@ -356,33 +370,65 @@ class EagleIEvent(DataSource):
         return ewma
     
     @staticmethod
-    def calculate_seasonal_baseline(ewma, decomposition_period=90):
+    def calculate_seasonal_baseline(ewma, decomposition_period=2920):
         """
         Applies seasonal decomposition to the EWMA data to extract the baseline.
 
         Parameters:
         ewma (pd.Series): EWMA data.
-        decomposition_period (int): The number of observations in each cycle. For quarterly data, this would typically be around 90 (assuming 30 days per month).
+        decomposition_period (int): The number of observations in each cycle. 
+        
+            For annual seasonality with 15-minute data, this is set to 35040.
+            For quarterly, 8760.
+            For monthly, 2920.
 
         Returns:
-        pd.Series: Combined baseline from seasonal decomposition.
+        pd.Series: Seasonal baseline extracted from seasonal decomposition.
         """
         print("Applying seasonal decomposition to extract baseline...")
-        baselines = []
-        for resample_period, df_period in ewma.resample('3M'):
-            print(f"Processing resample period: {resample_period}")
-            if not df_period.empty:
-                df_period = df_period.groupby(df_period.index).sum()  # Sum the baselines for all counties at each timestamp                
-                decomposition = sm.tsa.seasonal_decompose(df_period, model='additive', period=decomposition_period)
-                baselines.append(decomposition.trend)
-            else:
-                print(f"No data available for resample period: {resample_period}")
+        
+        # Ensure ewma is a Series with a datetime index
+        if not isinstance(ewma.index, pd.DatetimeIndex):
+            print("EWMA data index must be a DatetimeIndex.")
+            return
 
-        # Combine the baselines from each period
-        baseline = pd.concat(baselines)
+        # Check if the series has enough data points for decomposition
+        if len(ewma) < 2 * decomposition_period:
+            print(f"EWMA series does not have enough data points for seasonal decomposition. Required: {2 * decomposition_period}, Found: {len(ewma)}")
+            return
+        
+        # Apply seasonal decomposition
+        decomposition = sm.tsa.seasonal_decompose(ewma, model='additive', period=decomposition_period)
+        
+        # Extract and return the trend component as the baseline
+        baseline = decomposition.trend
+
         print("Seasonal decomposition and baseline extraction completed.")
         return baseline
 
+    @staticmethod
+    def cap_ewma_and_get_cap_value(ewma_data, multiplier=1):
+        """
+        Caps the EWMA data based on the IQR method for outlier detection and returns the capped data along with the cap value.
+
+        Parameters:
+        ewma_data (pd.Series): The exponentially weighted moving average data.
+        multiplier (float): The multiplier for the IQR to define what is considered an outlier.
+
+        Returns:
+        pd.Series: The capped EWMA data.
+        float: The cap value used.
+        """
+        q1 = ewma_data.quantile(0.25)
+        q3 = ewma_data.quantile(0.75)
+        iqr = q3 - q1
+        cap_value = q3 + (iqr * multiplier)
+
+        # Cap the data
+        capped_ewma = ewma_data.clip(upper=cap_value)
+
+        return capped_ewma, cap_value
+    
     @staticmethod
     def print_df_sample_data(data, sample_size=100):
         """

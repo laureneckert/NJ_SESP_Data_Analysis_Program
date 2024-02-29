@@ -164,23 +164,18 @@ uti.save_to_pickle(storm_systems, pickle_path_for_storm_systems)
 
 #In progress work
 
-"""
-# Loop through storm systems and plot outages
-for storm in hurricanes.storm_systems:
-    if storm.year >= 2015:  # Change this as per your requirement
-        print(f"Plotting outages for storm: {storm.storm_name}")
-        storm.plot_outages_over_time(eagle_i_events)
-        input("Press Enter to continue...")  # Wait for user input to proceed
-"""
-
 # Calculating EWMA and seasonal baseline
 ewma_data = EagleIEvent.calculate_ewma(eagle_i_events)
-seasonal_baseline = EagleIEvent.calculate_seasonal_baseline(ewma_data)
+
+# Cap the EWMA data and get the cap value
+capped_ewma, cap_value = EagleIEvent.cap_ewma_and_get_cap_value(ewma_data)
+
+# Now apply seasonal decomposition to capped EWMA data to get the seasonal baseline
+seasonal_baseline = EagleIEvent.calculate_seasonal_baseline(capped_ewma)
 
 # Printing samples of the calculated data
 EagleIEvent.print_df_sample_data(ewma_data, sample_size=50)
 EagleIEvent.print_df_sample_data(seasonal_baseline, sample_size=80)# Call the method with flags set to your preference
 
-EagleIEvent.plot_outages_over_time_per_year(eagle_i_events, ewma_data, seasonal_baseline, noaa_hurricane_events, storm_systems, show_noaa_events=True, show_storm_systems=True)
-# Plot zoomed outages around storms
-EagleIEvent.plot_zoomed_outages_around_storms(eagle_i_events, ewma_data, seasonal_baseline, noaa_hurricane_events, storm_systems)
+# Use the capped EWMA, seasonal baseline, and cap value in the plotting method
+EagleIEvent.plot_outages_over_time_per_year(eagle_i_events, ewma_data, seasonal_baseline, noaa_hurricane_events, storm_systems, cap_value, show_noaa_events=True, show_storm_systems=True)
