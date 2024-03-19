@@ -6,6 +6,7 @@
 from natural_hazard import NaturalHazard
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from scipy import stats
 
 class Hurricane(NaturalHazard):
@@ -175,3 +176,107 @@ class Hurricane(NaturalHazard):
         print(f"Hurricane Hazard Summary:")
         print(f"Type of Hazard: {self.type_of_hazard}")
         # Include more specific details as needed
+
+    def link_processed_noaa_events_to_storm_systems(self):
+        """
+        Links processed NOAA event windows to the relevant storm systems in the hurricane.
+        Uses the processed_noaa_windows class attribute directly.
+        """
+        print("Linking processed NOAA event windows to storm systems.")
+        for storm_system in self.storm_systems:
+
+            storm_system_noaa_event_windows = [
+                window for window in self.processed_noaa_windows
+                if not (pd.to_datetime(window[1]) <= storm_system.start_date or 
+                        pd.to_datetime(window[0]) >= storm_system.end_date)
+            ]
+            storm_system.processed_noaa_event_windows = storm_system_noaa_event_windows
+            print(f"Linked {len(storm_system_noaa_event_windows)} windows to storm system {storm_system.storm_name}.")
+
+    def link_and_print_summary(self):
+        print("Linking processed NOAA event windows to storm systems.")
+        self.link_processed_noaa_events_to_storm_systems()
+        
+        print("Printing summary for each linked storm system.")
+        for storm_system in self.storm_systems:
+            storm_system.print_linked_noaa_event_summary()
+
+    def identify_unlinked_noaa_windows(self, return_unlinked=True):
+        """
+        Identifies any NOAA event windows that were not linked to any storm system.
+        """
+        linked_windows = set()
+        for storm_system in self.storm_systems:
+            for window in storm_system.processed_noaa_event_windows:
+                # Ensure window has at least three elements before accessing the third
+                if len(window) >= 3:
+                    linked_windows.add((window[0], window[1], tuple(window[2])))
+                else:
+                    # Handle the case where window does not have a third element
+                    linked_windows.add((window[0], window[1]))
+
+        all_windows = set()
+        for window in self.processed_noaa_windows:
+            # Similar check as above
+            if len(window) >= 3:
+                all_windows.add((window[0], window[1], tuple(window[2])))
+            else:
+                all_windows.add((window[0], window[1]))
+
+        unlinked_windows = all_windows - linked_windows
+
+        if unlinked_windows:
+            print("Unlinked NOAA Event Windows:")
+            for window in sorted(list(unlinked_windows)):
+                print(f"Window: {window[0]} to {window[1]}", end="")
+                if len(window) > 2:
+                    print(f", Source Files: {window[2]}")
+                else:
+                    print()  # Newline for windows without a third element
+        else:
+            print("All NOAA event windows are linked to storm systems.")
+
+        if return_unlinked:
+            return list(unlinked_windows)
+
+    def find_storm_system_by_name_and_occurrence(self, storm_name, occurrence=1):
+        """
+        Finds a storm system by its name and occurrence.
+
+        Parameters:
+        storm_name (str): The name of the storm.
+        occurrence (int): The occurrence of the storm (default is 1).
+
+        Returns:
+        StormSystem or None: The found StormSystem object or None if not found.
+        """
+        for system in self.storm_systems:
+            if system.storm_name == storm_name and system.occurrence == occurrence:
+                return system
+        return None
+    
+    def link_unlinked_noaa_windows(self):
+        """
+        Links unlinked NOAA event windows to storm systems based on filenames.
+        """
+        unlinked_windows = self.identify_unlinked_noaa_windows(return_unlinked=True)  # Adjust the method to return unlinked windows
+        for start_time, end_time, filenames in unlinked_windows:
+            for filename in filenames:
+                # Strip off the known constant part of the filename
+                core_filename = filename.replace('_storm_data_search_results.csv', '')
+                # Split by underscores
+                parts = core_filename.split('_')
+                # If the last part is a digit, it's an occurrence, else default to 1
+                if parts[-1].isdigit():
+                    occurrence = int(parts[-1])
+                    storm_name = '_'.join(parts[:-1])  # Join all but the last part for the name
+                else:
+                    occurrence = 1
+                    storm_name = core_filename  # The core filename is the storm name
+
+                storm_system = self.find_storm_system_by_name_and_occurrence(storm_name, occurrence)
+                if storm_system:
+                    storm_system.processed_noaa_event_windows.append((start_time, end_time, {filename}))
+                    print(f"Linked window from {start_time} to {end_time}, from file {filename}, to storm system {storm_name} (Occurrence: {occurrence}).")
+                else:
+                    print(f"No matching storm system found for {storm_name} (Occurrence: {occurrence}) from file {filename}.")

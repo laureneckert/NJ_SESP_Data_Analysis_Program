@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from hazard import Hazard
 import utilities as uti
 import os
+import pandas as pd
 
 class NaturalHazard(Hazard):
     def __init__(self, type_of_hazard):
@@ -15,6 +16,8 @@ class NaturalHazard(Hazard):
         self.NRI_data_fields = {}
         self.noaa_events = []
         self.noaa_event_count = 0
+        self.processed_noaa_windows = [] #store processed event windows
+        self.threat_incident_count = 0 
         self.unique_noaa_regions = set()
         self.unique_noaa_event_types = set()
 
@@ -120,6 +123,101 @@ class NaturalHazard(Hazard):
 
             print("\nEnd of Data Samples")
 
+    def process_noaa_events(self):
+        print("Sorting NOAA events by start date.")
+        self.noaa_events.sort(key=lambda event: event.begin_date)
+
+        merged_windows = []
+        print("Processing NOAA events for overlapping and extending end times.")
+        for event in self.noaa_events:
+            start_time = uti.parse_date_time(event.begin_date, str(event.begin_time).zfill(4))
+            end_time = uti.parse_date_time(event.end_date, str(event.end_time).zfill(4)) if event.end_date and event.end_time else start_time + pd.Timedelta(hours=1)
+            
+            # Check if this event logically should be merged with the last window
+            if merged_windows:
+                last_window_start_year = merged_windows[-1][0].year
+                current_event_year = start_time.year
+                # Ensure events are from the same year and check temporal proximity
+                if last_window_start_year == current_event_year and start_time <= merged_windows[-1][1] + pd.Timedelta(hours=1):
+                    merged_windows[-1][1] = max(merged_windows[-1][1], end_time)
+                    merged_windows[-1][2].add(event.filename)
+                    print(f"Merged with window from {merged_windows[-1][0]} to {merged_windows[-1][1]}, from files: {merged_windows[-1][2]}")
+                else:
+                    merged_windows.append([start_time, end_time, {event.filename}])
+                    print(f"Created new window from {start_time} to {end_time}, from file {event.filename}")
+            else:
+                merged_windows.append([start_time, end_time, {event.filename}])
+                print(f"Created new window from {start_time} to {end_time}, from file {event.filename}")
+
+        self.processed_noaa_windows = [(window[0], window[1], window[2]) for window in merged_windows]
+        self.threat_incident_count = len(merged_windows)
+        print(f"Finished processing. Total threat incidents: {self.threat_incident_count}.")
+
+    def print_noaa_window_summary(self):
+        """
+        Prints a summary of processed NOAA event windows, including the filenames.
+        """
+        print(f"{self.type_of_hazard} has {self.threat_incident_count} threat incidents.")
+        for start, end, filenames in self.processed_noaa_windows:
+            filenames_str = ', '.join(filenames)  # Convert the set of filenames to a string
+            print(f"Window: {start} to {end}, Source Files: {filenames_str}")
+
+    def calculate_duration_above_baseline_for_windows(self, event_windows, ewma_data, seasonal_baseline):
+        if not event_windows:
+            print("No event windows provided for analysis.")
+            return pd.Timedelta(0), []
+
+        if ewma_data.empty or seasonal_baseline.empty:
+            print("EWMA data or seasonal baseline is empty.")
+            return pd.Timedelta(0), []
+
+        total_duration_above = pd.Timedelta(0)
+        timestamps_above = []
+        ewma_start, ewma_end = ewma_data.index[0], ewma_data.index[-1]
+
+        print("Processing event windows to calculate total time above baseline.")
+
+        for window in event_windows:
+            start, end = pd.to_datetime(window[0]), pd.to_datetime(window[1])
+            
+            # Check if window is within EWMA data range
+            if start > ewma_end or end < ewma_start:
+                print(f"Skipping window from {start} to {end} as it is outside the EWMA data range.")
+                continue
+
+            # Adjust window to overlap with EWMA data timeframe
+            window_start = max(start, ewma_start)
+            window_end = min(end, ewma_end)
+
+            window_ewma = ewma_data[window_start:window_end]
+            window_baseline = seasonal_baseline[window_start:window_end]
+            window_above_baseline = window_ewma > window_baseline
+
+            # Properly handle NaN values resulting from the shift operation
+            rising_points = window_above_baseline[(window_above_baseline & (~window_above_baseline.shift(1).fillna(False)))].index
+            falling_points = window_above_baseline[(~window_above_baseline & (window_above_baseline.shift(1).fillna(False)))].index
+
+            if window_above_baseline.iloc[0]:
+                rising_points = [window_start] + list(rising_points)
+            if window_above_baseline.iloc[-1]:
+                falling_points = list(falling_points) + [window_end]
+
+            for rise, fall in zip(rising_points, falling_points):
+                duration = fall - rise
+                total_duration_above += duration
+                timestamps_above.append((rise, fall))
+                print(f"Window from {rise} to {fall} is above baseline, contributing {duration} to the total.")
+
+        print(f"Total duration above baseline: {total_duration_above}")
+        return total_duration_above, timestamps_above
+
+
+
+
+
+
+
+
     def calculate_percent_customers_affected(self):
         # Define the total number of customers in the state
         total_customers_in_state = 4030000 #according to utilities websites
@@ -172,7 +270,7 @@ class NaturalHazard(Hazard):
 
         return total_frequency / count if count > 0 else 0.0
     
-    def calculate_total_eaglei_outage_duration(self):
+    def calculate_total_eaglei_outage_duration(self): #not right dont use
         # Sum of outages in Eagle I events
         total_outages = sum(event['sum'] for event in self.eaglei_events if 'sum' in event)
 

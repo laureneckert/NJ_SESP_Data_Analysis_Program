@@ -57,7 +57,6 @@ def load_pickle(file_path):
         print(f"Error loading pickle file: {e}")
         return None
 
-
 @contextlib.contextmanager
 def redirect_stdout_to_file(file_path):
     """

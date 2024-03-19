@@ -220,4 +220,4 @@ class NOAAEvent(DataSource):
     def print_samples(noaa_events, sample_size=5):
         print("\nSample NOAA Event Data:")
         for event in noaa_events[:sample_size]:
-            print(f"Event ID: {event.event_id}, Type: {event.weather_event_type}, Date: {event.begin_date}, Location: {event.begin_location}")
+            print(f"Event ID: {event.event_id}, Type: {event.weather_event_type}, Date: {event.begin_date} {event.begin_time} to {event.end_date} {event.end_time}, Location: {event.begin_location}")

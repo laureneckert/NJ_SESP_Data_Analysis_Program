@@ -20,7 +20,8 @@ config = {
     },
     'directories': {
         'pickle_directory': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles",
-        'outages_plot_directory': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\outages visualizations",
+        'outages_by_year_plot_directory': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\outages visualizations\by year",
+        'outages_by_storm_system_plot_directory': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\outages visualizations\by storm",    
     },
     'pickle_paths': {
         #data sources

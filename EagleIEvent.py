@@ -198,7 +198,7 @@ class EagleIEvent(DataSource):
         show_storm_systems (bool): Flag to show or hide storm system periods.
         """
         # Check for terminal output directory
-        plot_dir = config['directories']['outages_plot_directory']
+        plot_dir = config['directories']['outages_by_year_plot_directory']
         if not os.path.exists(plot_dir):
             os.makedirs(plot_dir)
 
@@ -256,8 +256,9 @@ class EagleIEvent(DataSource):
             ax.axhline(y=cap_value, color='magenta', linestyle='--', label='Outlier Cap')
 
             # Formatting the plot
+            # Set major locator to every 7 days
+            ax.xaxis.set_major_locator(mdates.DayLocator(interval=14))
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-            ax.xaxis.set_major_locator(mdates.MonthLocator())
             fig.autofmt_xdate()
             plt.title(f'Outages over Time for {year}', fontsize=16)
             plt.xlabel('Time', fontsize=14)
@@ -275,75 +276,83 @@ class EagleIEvent(DataSource):
             fig.savefig(os.path.join(plot_dir, f"outages_by_year_{year}_v{version}.png"))
             plt.close(fig)
 
-    @staticmethod #this isnt working - moving on from it but would like to go back and fix
-    def plot_zoomed_outages_around_storms(eagle_i_events, ewma_data, seasonal_baseline, noaa_events, storm_systems):
+    @staticmethod
+    def plot_zoomed_outages_around_storms(eagle_i_events, ewma_data, seasonal_baseline, noaa_events, storm_systems, cap_value, after_2014=True):
         # Check for terminal output directory
-        plot_dir = config['directories']['outages_plot_directory']
+        plot_dir = config['directories']['outages_by_storm_system_plot_directory']
         if not os.path.exists(plot_dir):
             os.makedirs(plot_dir)
-        
+
+        # Define the color for storm systems
+        storm_system_color = 'cyan'
+
         # Convert eagle_i_events to DataFrame and group by timestamp
         df = pd.DataFrame(eagle_i_events)
         df['run_start_time'] = pd.to_datetime(df['run_start_time'])
         df_grouped = df.groupby('run_start_time').sum().reset_index()
-        
+
+        # Filter storm systems based on the year, if after_2014 is True
+        if after_2014:
+            storm_systems = [system for system in storm_systems if system.year > 2014]
+
         for system in storm_systems:
-            # Define the time window: 1 week before and after the storm system
+            # Determine the window for the storm system with 7-day padding
             start_window = system.start_date - pd.Timedelta(days=7)
             end_window = system.end_date + pd.Timedelta(days=7)
-            
-            # Filter eagle i events within this window
-            window_mask = (df_grouped['run_start_time'] >= start_window) & (df_grouped['run_start_time'] <= end_window)
-            filtered_eagle_i_events = df_grouped[window_mask]
 
-            # Filter and sum EWMA data within this window
-            ewma_mask = (ewma_data.index >= start_window) & (ewma_data.index <= end_window)
-            filtered_ewma = ewma_data[ewma_mask].groupby(ewma_data[ewma_mask].index).sum()
-
-            # Filter and sum Seasonal Baseline data within this window
-            baseline_mask = (seasonal_baseline.index >= start_window) & (seasonal_baseline.index <= end_window)
-            filtered_baseline = seasonal_baseline[baseline_mask].groupby(seasonal_baseline[baseline_mask].index).sum()
-            
-            # Plotting
+            # Prepare to plot
             fig, ax = plt.subplots(figsize=(15, 7))
-            ax.plot_date(filtered_eagle_i_events['run_start_time'], filtered_eagle_i_events['sum'], 'b-', label='Eagle I Outages')
-            ax.plot(filtered_ewma.index, filtered_ewma, 'r-', label='EWMA')
-            ax.plot(filtered_baseline.index, filtered_baseline, 'g-', label='Seasonal Trendline')
-            
-            # Mark NOAA events
+
+            # Highlight the storm system window
+            ax.axvspan(system.start_date, system.end_date, color=storm_system_color, alpha=0.3, label=f'Storm: {system.storm_name}')
+
+            # Filter eagle_i_events within the window and plot
+            filtered_events = df_grouped[(df_grouped['run_start_time'] >= start_window) & (df_grouped['run_start_time'] <= end_window)]
+            ax.plot_date(filtered_events['run_start_time'], filtered_events['sum'], 'b-', label='Eagle I Outages')
+
+            # Filter EWMA and Seasonal Baseline data for the window and plot if available
+            ewma_filtered = ewma_data[(ewma_data.index >= start_window) & (ewma_data.index <= end_window)]
+            baseline_filtered = seasonal_baseline[(seasonal_baseline.index >= start_window) & (seasonal_baseline.index <= end_window)]
+            if not ewma_filtered.empty:
+                ax.plot(ewma_filtered.index, ewma_filtered, 'r-', label='EWMA')
+            if not baseline_filtered.empty:
+                ax.plot(baseline_filtered.index, baseline_filtered, 'g-', label='Seasonal Baseline')
+
+            # Highlight NOAA event periods with a single label
             noaa_event_added = False
             for noaa_event in noaa_events:
-                if start_window <= pd.to_datetime(noaa_event.begin_date) <= end_window:
+                start_noaa = pd.to_datetime(noaa_event.begin_date)
+                end_noaa = pd.to_datetime(noaa_event.end_date)
+                if start_window <= start_noaa <= end_window or start_window <= end_noaa <= end_window:
                     if not noaa_event_added:
-                        ax.axvspan(pd.to_datetime(noaa_event.begin_date), pd.to_datetime(noaa_event.end_date), color='orange', alpha=0.5, label='NOAA Event Period')
+                        ax.axvspan(start_noaa, end_noaa, color='orange', alpha=0.5, label='NOAA Event Period')
                         noaa_event_added = True
                     else:
-                        ax.axvspan(pd.to_datetime(noaa_event.begin_date), pd.to_datetime(noaa_event.end_date), color='orange', alpha=0.5)
-            
-            # Highlight the storm system period
-            ax.axvspan(system.start_date, system.end_date, color='cyan', alpha=0.5, label=f'Storm: {system.storm_name}')
-            
-            # Formatting
+                        ax.axvspan(start_noaa, end_noaa, color='orange', alpha=0.5)
+
+            # Plot the EWMA cap value as a horizontal line
+            ax.axhline(y=cap_value, color='magenta', linestyle='--', label='Outlier Cap')
+
+            # Formatting the plot
+            ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-            ax.xaxis.set_major_locator(mdates.DayLocator())
             fig.autofmt_xdate()
-            plt.title(f'Statewide Outages around {system.storm_name}', fontsize=16)
+            plt.title(f'Outages around {system.storm_name}', fontsize=16)
             plt.xlabel('Time', fontsize=14)
             plt.ylabel('Outage Sum', fontsize=14)
             plt.legend()
             plt.tight_layout()
-            
-            # Save the plot with a descriptive filename
-            filename = f"zoomed_outages_around_{system.storm_name}_{system.year}.png"
-            fig_path = os.path.join(plot_dir, filename)
+
+            # Determine the version number for the file and save the plot
             version = 1
-            while os.path.exists(f"{fig_path[:-4]}_v{version}.png"):
+            filename = f"zoomed_outages_around_{system.storm_name}_{system.year}_v{version}.png"
+            while os.path.exists(os.path.join(plot_dir, filename)):
                 version += 1
-            fig_path = f"{fig_path[:-4]}_v{version}.png"
+                filename = f"zoomed_outages_around_{system.storm_name}_{system.year}_v{version}.png"
             
-            fig.savefig(fig_path)
+            fig.savefig(os.path.join(plot_dir, filename))
             plt.close(fig)
-            print(f"Saved figure to {fig_path}")
+            print(f"Saved plot fir {filename}")
 
     @staticmethod
     def calculate_ewma(eagle_i_events, span=48):

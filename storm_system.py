@@ -24,6 +24,8 @@ class StormSystem:
         self.peak_outages_by_county = {}  # Stores peak outages for each county
         self.total_peak_outages = 0  # Stores total peak outages for the storm system
 
+        self.processed_noaa_event_windows = []
+
     @staticmethod
     def extract_data(file_path):
         """
@@ -75,7 +77,12 @@ class StormSystem:
         print(f"Start Date: {self.start_date}, End Date: {self.end_date}")
         print(f"Type: {self.storm_type}, Intensity: {self.intensity}")
         print(f"Comment: {self.comment}")
-
+    
+    def print_all_storms_basic_info(storm_systems):
+        for storm_system in storm_systems:
+            storm_system.print_basic_info()
+            print("-----------------------")  # Separator for readability
+    
     def find_storm_system_by_name_and_occurrence(self, storm_name, occurrence=1):
         for system in self.storm_systems:
             if system.storm_name == storm_name and system.occurrence == occurrence:
@@ -175,3 +182,14 @@ class StormSystem:
         # Show the plot
         plt.tight_layout()  # Adjust the padding between and around subplots.
         plt.show()
+
+    def print_linked_noaa_event_summary(self):
+        """
+        Prints a summary of NOAA event windows linked to this storm system,
+        including the source files for each window.
+        """
+        print(f"\nStorm System: {self.storm_name} (Year: {self.year}) has {len(self.processed_noaa_event_windows)} linked NOAA event windows.")
+        for window in self.processed_noaa_event_windows:
+            start, end, source_files = window
+            source_files_str = ', '.join(source_files)
+            print(f"- Window: {start} to {end}, Source Files: {source_files_str}")
