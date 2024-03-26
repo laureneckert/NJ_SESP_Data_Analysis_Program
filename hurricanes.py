@@ -4,6 +4,7 @@
 
 #Hurricane class
 from natural_hazard import NaturalHazard
+import utilities as uti
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -280,3 +281,35 @@ class Hurricane(NaturalHazard):
                     print(f"Linked window from {start_time} to {end_time}, from file {filename}, to storm system {storm_name} (Occurrence: {occurrence}).")
                 else:
                     print(f"No matching storm system found for {storm_name} (Occurrence: {occurrence}) from file {filename}.")
+
+    def calculate_average_eaglei_outage_duration(self):
+        print("Starting calculation of average Eagle I outage duration above baseline for Hurricanes.")
+        threshold_date = pd.to_datetime("2014-11-01 04:00:00")
+        total_duration = 0.0  # Initialize as float
+        count = 0
+
+        for storm_system in self.storm_systems:
+            print(f"\nProcessing Storm System: {storm_system.storm_name}, Start Date: {storm_system.start_date}")
+            if storm_system.start_date > threshold_date:
+                print(f"Storm system {storm_system.storm_name} is after the threshold date {threshold_date} and will be included.")
+                # Directly use the duration as it's already a float
+                duration_hours = storm_system.outages_above_baseline_duration
+                print(f"Including duration: {duration_hours} hours for {storm_system.storm_name}")
+                total_duration += duration_hours
+                count += 1
+                for window in storm_system.outages_above_baseline_timestamps:
+                    print(f"Included window timestamps: Start: {window[0]}, End: {window[1]}")
+            else:
+                print(f"Storm system {storm_system.storm_name} is before the threshold date {threshold_date} and will not be included.")
+
+        if count > 0:
+            average_duration = total_duration / count
+            print(f"\nCalculated average duration: {average_duration} hours over {count} storm systems.")
+        else:
+            average_duration = 0.0
+            print("\nNo storm systems with calculated durations found after the threshold date. Setting average duration to 0.")
+
+        self.average_duration_above_baseline = average_duration
+        print(f"\nAverage Eagle I Outage Duration Above Baseline for Hurricanes (after threshold date): {average_duration} hours")
+        return average_duration
+

@@ -26,8 +26,10 @@ class NaturalHazard(Hazard):
         
         self.eaglei_events = []
         self.unique_eaglei_regions = set()
-        self.total_duration_eaglei = 0
-        self.outage_duration_by_county = {}
+        
+        self.average_duration_above_baseline = 0.0 #average per threat incident
+        #self.outage_duration_by_county = {} #to delete?
+        self.timestamps_above_baseline = []
 
     def calculate_statistics(self, noaa_to_eaglei_mapping):
         # Placeholder for method that calculates statistics based on NOAA and EagleI data
@@ -123,6 +125,24 @@ class NaturalHazard(Hazard):
 
             print("\nEnd of Data Samples")
 
+    def get_event_times(self, event): #for NOAA events, should probably go in that class
+
+        """
+        Adjusts the event times, taking into account peculiarities such as missing end times.
+        """
+        start_time = uti.parse_date_time(event.begin_date, str(event.begin_time).zfill(4))
+        if event.end_date and event.end_time:
+            end_time = uti.parse_date_time(event.end_date, str(event.end_time).zfill(4))
+        else:
+            end_time = start_time + pd.Timedelta(hours=1)  # Adjust according to your logic
+
+        # Ensure end_time is not before start_time
+        if end_time <= start_time:
+            end_time = start_time + pd.Timedelta(hours=1)
+
+        print(f"Event: {event.event_id}, Start: {start_time}, End: {end_time}, Type: {event.event_type}")
+        return start_time, end_time
+
     def process_noaa_events(self):
         print("Sorting NOAA events by start date.")
         self.noaa_events.sort(key=lambda event: event.begin_date)
@@ -130,9 +150,8 @@ class NaturalHazard(Hazard):
         merged_windows = []
         print("Processing NOAA events for overlapping and extending end times.")
         for event in self.noaa_events:
-            start_time = uti.parse_date_time(event.begin_date, str(event.begin_time).zfill(4))
-            end_time = uti.parse_date_time(event.end_date, str(event.end_time).zfill(4)) if event.end_date and event.end_time else start_time + pd.Timedelta(hours=1)
-            
+            start_time, end_time = self.get_event_times(event)  # Use the new method here
+ 
             # Check if this event logically should be merged with the last window
             if merged_windows:
                 last_window_start_year = merged_windows[-1][0].year
@@ -193,7 +212,12 @@ class NaturalHazard(Hazard):
             window_baseline = seasonal_baseline[window_start:window_end]
             window_above_baseline = window_ewma > window_baseline
 
-            # Properly handle NaN values resulting from the shift operation
+            # Add check for empty window_above_baseline
+            if window_above_baseline.empty:
+                print("No data points above baseline in this window.")
+                continue
+
+            # Now properly handle NaN values resulting from the shift operation
             rising_points = window_above_baseline[(window_above_baseline & (~window_above_baseline.shift(1).fillna(False)))].index
             falling_points = window_above_baseline[(~window_above_baseline & (window_above_baseline.shift(1).fillna(False)))].index
 
@@ -207,15 +231,12 @@ class NaturalHazard(Hazard):
                 total_duration_above += duration
                 timestamps_above.append((rise, fall))
                 print(f"Window from {rise} to {fall} is above baseline, contributing {duration} to the total.")
+        
+        # Convert total_duration_above from Timedelta to float (hours)
+        total_duration_hours = total_duration_above.total_seconds() / 3600
 
         print(f"Total duration above baseline: {total_duration_above}")
-        return total_duration_above, timestamps_above
-
-
-
-
-
-
+        return total_duration_hours, timestamps_above
 
 
     def calculate_percent_customers_affected(self):
@@ -270,14 +291,7 @@ class NaturalHazard(Hazard):
 
         return total_frequency / count if count > 0 else 0.0
     
-    def calculate_total_eaglei_outage_duration(self): #not right dont use
-        # Sum of outages in Eagle I events
-        total_outages = sum(event['sum'] for event in self.eaglei_events if 'sum' in event)
-
-        # Convert the total sum of outages to duration in minutes (each unit is 15 minutes)
-        total_duration_minutes = total_outages * 15
-
-        # Convert minutes to hours
-        total_duration_hours = total_duration_minutes / 60
-
-        return total_duration_hours
+    def calculate_average_eaglei_outage_duration(self):
+        #placeholder for the implementation of the general case
+        #hurricanes has its own implementation
+        pass

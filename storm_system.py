@@ -25,6 +25,8 @@ class StormSystem:
         self.total_peak_outages = 0  # Stores total peak outages for the storm system
 
         self.processed_noaa_event_windows = []
+        self.outages_above_baseline_duration = 0.0
+        self.outages_above_baseline_timestamps = []
 
     @staticmethod
     def extract_data(file_path):

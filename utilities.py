@@ -6,6 +6,7 @@
 
 # Libraries
 from datetime import datetime
+import pandas as pd
 import pickle
 import sys
 import contextlib
@@ -66,7 +67,7 @@ def redirect_stdout_to_file(file_path):
     file_path (str): Path to the file where stdout will be written.
 
     Usage:
-    with redirect_stdout_to_file('output.txt'):
+    with redirect_stdout_to_file(file path):
         print("This will go to the file.")
     """
     original_stdout = sys.stdout  # Save the original stdout
@@ -86,3 +87,7 @@ def save_natural_hazards_to_pickle(hazards):
                 print(f"No pickle path found for {hazard.type_of_hazard}")
         except Exception as e:
             print(f"Error saving {hazard.type_of_hazard}: {e}")
+
+def timedelta_to_hours(td):
+    """Converts a Timedelta to hours as a float."""
+    return td.total_seconds() / 3600.0

@@ -4,6 +4,7 @@
 #driver
 
 import os
+import sys
 import utilities as uti
 from njsesp_config import config
 
@@ -26,22 +27,22 @@ def load_data():
         config['pickle_paths']['noaa_hurri'], 
         config['data_paths']['noaa']['noaa_hurricanes_files_directory'],
         NOAAEvent,
-        force_recreate=False
+        force_recreate=True
         )
     eagle_i_events = DataSource.load_or_create( #Load or create Eagle I events
         config['pickle_paths']['eagle_i'], 
         config['data_paths']['eagle_i']['directory'],
         EagleIEvent,
-        force_recreate=False
+        force_recreate=True
     )
     fema_nri_data = DataSource.load_or_create( # Load or create FEMA NRI data
         config['pickle_paths']['fema_nri'],
         config['data_paths']['fema_nri']['file_path'],
         FEMA_NRI_data,
-        force_recreate=False
+        force_recreate=True
     )    
     #verification step
-    print_data = False # Print data source samples?
+    print_data = True # Print data source samples?
     if print_data:
         if noaa_hurricane_events:
             NOAAEvent.print_samples(noaa_hurricane_events, 30)
@@ -61,8 +62,8 @@ def load_hurricane_related_stuff():
         force_recreate=True
     )
     #Load or create hazard objects with default values
-    hurricanes = NaturalHazard.load_or_create(config['pickle_paths']['hurricanes'], Hurricane, force_recreate=False)
-    update_hurricanes_storm_systems_flag = False # Do you want to link the storm systems to the hurricanes hazard and then update the hurricanes pickle?
+    hurricanes = NaturalHazard.load_or_create(config['pickle_paths']['hurricanes'], Hurricane, force_recreate=True)
+    update_hurricanes_storm_systems_flag = True # Do you want to link the storm systems to the hurricanes hazard and then update the hurricanes pickle?
     if update_hurricanes_storm_systems_flag: # Check the flag before proceeding
         print("Updating Hurricanes with new Storm Systems...")
         
@@ -77,7 +78,7 @@ def load_hurricane_related_stuff():
         print("Update Hurricanes flag is set to False. Skipping update.")
 
     #verification step
-    print_data_2 = False # Print a summary of hurricane data?
+    print_data_2 = True # Print a summary of hurricane data?
     if print_data_2:
         if hurricanes:
             hurricanes.print_basic_info() 
@@ -86,7 +87,7 @@ def load_hurricane_related_stuff():
     
     return storm_systems, hurricanes
 
-def sort_and_assign_data(eagle_i_events, fema_nri_data, hurricanes, hazards):
+def sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, hurricanes, hazards):
     #Define the mapping of NOAA event groups to hazards
     noaa_event_groups = {
         'Hurricane': {
@@ -96,7 +97,7 @@ def sort_and_assign_data(eagle_i_events, fema_nri_data, hurricanes, hazards):
         },
     }
 
-    sort_and_assign_then_save = False #Do you want to assign the data sources to the hazards? Do this if you just created new natural hazard objects or new data source objects.
+    sort_and_assign_then_save = True #Do you want to assign the data sources to the hazards? Do this if you just created new natural hazard objects or new data source objects.
     if sort_and_assign_then_save:
         print("Beginning sorting and assigning data sources to hazards")
 
@@ -142,67 +143,86 @@ def data_processing_for_eaglei(eagle_i_events, noaa_hurricane_events, storm_syst
 
     return ewma_data, seasonal_baseline
 
-#Step 1: Check for pickles (pre-loaded and saved data ready to use)
-check_for_pickles()
+def main(args=None):
+    """Main entry point of the program."""
+    if args is None:
+        args = sys.argv[1:]
+    
+    #Step 1: Check for pickles (pre-loaded and saved data ready to use)
+    check_for_pickles()
+    #Step 2: Load or create data source objects
+    noaa_hurricane_events, eagle_i_events, fema_nri_data = load_data()
+    #Step 3: Loading and creating natural hazards NOTE: Each natural hazard has one object for each subclass to store all the relevant variables in, the subclasses represent the entire risk, not individual events of the risk
+    storm_systems, hurricanes = load_hurricane_related_stuff() #Hurricanes
+        #winter storms
+        #tornados
+        #flooding
+        #lightning
 
-#Step 2: Load or create data source objects
-noaa_hurricane_events, eagle_i_events, fema_nri_data = load_data()
+    # Initialize list of all hazards
+    hazards = [hurricanes] # Add other hazards to this list
 
-#Step 3: Loading and creating natural hazards NOTE: Each natural hazard has one object for each subclass to store all the relevant variables in, the subclasses represent the entire risk, not individual events of the risk
-#Hurricanes
-storm_systems, hurricanes = load_hurricane_related_stuff()
-#winter storms
-#tornados
-#flooding
-#lightning
+    #Step 4: Assigning data from NOAA, filtering EagleI then assigning, and assigning FEMA NRI data to relevant hazards
+    sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, hurricanes, hazards)
 
-# Initialize list of all hazards
-hazards = [hurricanes] # Add other hazards to this list
+    #Step 5: Data processing for natural hazards - calculating EWMA, seasonal baseline, plotting results
+    ewma_data, seasonal_baseline = data_processing_for_eaglei(eagle_i_events, noaa_hurricane_events, storm_systems)
 
-#Step 4: Assigning data from NOAA, filtering EagleI then assigning, and assigning FEMA NRI data to relevant hazards
-sort_and_assign_data(eagle_i_events, fema_nri_data, hurricanes, hazards)
-
-#Step 5: Data processing for natural hazards - calculating EWMA, seasonal baseline, plotting results
-ewma_data, seasonal_baseline = data_processing_for_eaglei(eagle_i_events, noaa_hurricane_events, storm_systems)
-
-#5.2 processing the noaa events to get the event windows without overlaps
-hurricanes.process_noaa_events()
-hurricanes.link_and_print_summary()
-unlinked_noaa_windows = hurricanes.identify_unlinked_noaa_windows()
-# Assuming the identify_unlinked_noaa_windows method is adjusted to return the list of unlinked windows
-if unlinked_noaa_windows:
-    print("Attempting to link unlinked NOAA event windows to storm systems based on file names.")
-    hurricanes.link_unlinked_noaa_windows()
-else:
-    print("No unlinked NOAA event windows to process.")
-hurricanes.identify_unlinked_noaa_windows(return_unlinked=False)
-#hurricanes.print_noaa_window_summary()
-
-# After processing NOAA events and linking unlinked windows
-print("\nVerifying linked NOAA event windows for each storm system:")
-
-# Example code for iterating over storm systems to verify linked NOAA event windows
-linked_windows_summary = {}  # Dictionary to keep a summary of linked windows count for each storm
-
-for storm_system in hurricanes.storm_systems:
-    linked_windows_count = len(storm_system.processed_noaa_event_windows)
-    linked_windows_summary[storm_system.storm_name] = linked_windows_count
-    print(f"Storm System: {storm_system.storm_name} (Year: {storm_system.year}) - Linked NOAA Event Windows: {linked_windows_count}")
-
-    # Proceed with further analysis only if the storm system has linked NOAA event windows
-    if linked_windows_count > 0:
-        total_duration, timestamps_above = hurricanes.calculate_duration_above_baseline_for_windows(
-            storm_system.processed_noaa_event_windows, ewma_data, seasonal_baseline)
-        
-        # Print or store the results as needed
-        print(f"Total Duration Above Baseline: {total_duration}")
-        print(f"Timestamps Above Baseline: {timestamps_above}")
+    #5.2 processing the noaa events to get the event windows without overlaps
+    hurricanes.process_noaa_events()
+    print("-------------------------------------------------")
+    hurricanes.link_and_print_summary()
+    print("-------------------------------------------------")
+    unlinked_noaa_windows = hurricanes.identify_unlinked_noaa_windows()
+    print("-------------------------------------------------")    
+    # Assuming the identify_unlinked_noaa_windows method is adjusted to return the list of unlinked windows
+    if unlinked_noaa_windows:
+        print("Attempting to link unlinked NOAA event windows to storm systems based on file names.")
+        hurricanes.link_unlinked_noaa_windows()
     else:
-        print(f"No linked NOAA event windows for {storm_system.storm_name}. Skipping duration calculation.")
+        print("No unlinked NOAA event windows to process.")
+    hurricanes.identify_unlinked_noaa_windows(return_unlinked=False)
+    #hurricanes.print_noaa_window_summary()
+    print("-------------------------------------------------")
+    # After processing NOAA events and linking unlinked windows
+    print("\nVerifying linked NOAA event windows for each storm system:")
 
+    # Example code for iterating over storm systems to verify linked NOAA event windows
+    linked_windows_summary = {}  # Dictionary to keep a summary of linked windows count for each storm
+    print("-------------------------------------------------")
+    for storm_system in hurricanes.storm_systems:
+        print("************")
+        linked_windows_count = len(storm_system.processed_noaa_event_windows)
+        linked_windows_summary[storm_system.storm_name] = linked_windows_count
+        print(f"Storm System: {storm_system.storm_name} (Year: {storm_system.year}) - Linked NOAA Event Windows: {linked_windows_count}")
+
+        # Proceed with further analysis only if the storm system has linked NOAA event windows
+        if linked_windows_count > 0:
+            total_duration, timestamps_above = hurricanes.calculate_duration_above_baseline_for_windows(
+                storm_system.processed_noaa_event_windows, ewma_data, seasonal_baseline)
+            
+            # Assign the results to the storm system for later use in averaging
+            storm_system.outages_above_baseline_duration = total_duration
+            storm_system.outages_above_baseline_timestamps = timestamps_above
+
+            # Print or store the results as needed
+            print(f"Total Duration Above Baseline: {total_duration}")
+            print(f"Timestamps Above Baseline: {timestamps_above}")
+        else:
+            print(f"No linked NOAA event windows for {storm_system.storm_name}. Skipping duration calculation.")
+
+    # After processing all storm systems, calculate the average duration for the hurricanes hazard
+    hurricanes.calculate_average_eaglei_outage_duration()
+    print(f"Average duration per hurricane storm system of Eagle I outages above baseline: {hurricanes.average_duration_above_baseline}")
+
+
+if __name__ == "__main__":
+    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output15.txt"):
+        main()
 
 
 """
+#other in progress stuff here
 #Hurricanes   
 hurricanes.calculate_average_peak_outages() #NOT CORRECT LOL IM DUMB
 hurricanes.calculate_percent_customers_affected()  #SEE ABOVE

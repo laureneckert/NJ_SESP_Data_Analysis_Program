@@ -217,7 +217,7 @@ class NOAAEvent(DataSource):
                     print(f"File: {event.filename}, Line: {event.line_number}, Event ID: {event.event_id}, CZ Name: {event.cz_name_str}")
 
     @staticmethod
-    def print_samples(noaa_events, sample_size=5):
+    def print_samples(noaa_events, sample_size=15):
         print("\nSample NOAA Event Data:")
         for event in noaa_events[:sample_size]:
             print(f"Event ID: {event.event_id}, Type: {event.weather_event_type}, Date: {event.begin_date} {event.begin_time} to {event.end_date} {event.end_time}, Location: {event.begin_location}")
