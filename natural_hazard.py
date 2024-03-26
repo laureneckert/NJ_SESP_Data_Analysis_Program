@@ -182,61 +182,83 @@ class NaturalHazard(Hazard):
             print(f"Window: {start} to {end}, Source Files: {filenames_str}")
 
     def calculate_duration_above_baseline_for_windows(self, event_windows, ewma_data, seasonal_baseline):
+        """
+        Calculates the total duration where event data is above the seasonal baseline.
+
+        Parameters:
+        - event_windows: List of event window tuples (start, end) for processing.
+        - ewma_data: DataFrame containing Exponentially Weighted Moving Average data.
+        - seasonal_baseline: DataFrame containing seasonal baseline data.
+
+        Returns:
+        - total_duration_hours: The total duration above baseline in hours.
+        - timestamps_above: List of tuples with start and end timestamps above baseline.
+        """
+
+        # Return 0 duration and an empty list if there are no event windows or data is missing.
         if not event_windows:
             print("No event windows provided for analysis.")
-            return pd.Timedelta(0), []
+            return 0, []
 
         if ewma_data.empty or seasonal_baseline.empty:
             print("EWMA data or seasonal baseline is empty.")
-            return pd.Timedelta(0), []
+            return 0, []
 
+        # Initialize total duration as a Timedelta object and a list for timestamps.
         total_duration_above = pd.Timedelta(0)
         timestamps_above = []
+        # Determine the start and end of the EWMA data for comparison.
         ewma_start, ewma_end = ewma_data.index[0], ewma_data.index[-1]
 
         print("Processing event windows to calculate total time above baseline.")
 
         for window in event_windows:
+            # Convert event window start and end times to datetime objects.
             start, end = pd.to_datetime(window[0]), pd.to_datetime(window[1])
-            
-            # Check if window is within EWMA data range
+
+            # Skip windows outside the EWMA data range.
             if start > ewma_end or end < ewma_start:
                 print(f"Skipping window from {start} to {end} as it is outside the EWMA data range.")
                 continue
 
-            # Adjust window to overlap with EWMA data timeframe
+            # Adjust window to overlap with EWMA data timeframe.
             window_start = max(start, ewma_start)
             window_end = min(end, ewma_end)
 
+            # Extract EWMA and baseline data for the current window.
             window_ewma = ewma_data[window_start:window_end]
             window_baseline = seasonal_baseline[window_start:window_end]
+            # Determine which data points are above the baseline.
             window_above_baseline = window_ewma > window_baseline
 
-            # Add check for empty window_above_baseline
+            # Continue if no data points are above the baseline.
             if window_above_baseline.empty:
                 print("No data points above baseline in this window.")
                 continue
 
-            # Now properly handle NaN values resulting from the shift operation
+            # Identify rising and falling edges of the above-baseline condition.
             rising_points = window_above_baseline[(window_above_baseline & (~window_above_baseline.shift(1).fillna(False)))].index
             falling_points = window_above_baseline[(~window_above_baseline & (window_above_baseline.shift(1).fillna(False)))].index
 
+            # Adjust the first and last points if they are above the baseline.
             if window_above_baseline.iloc[0]:
                 rising_points = [window_start] + list(rising_points)
             if window_above_baseline.iloc[-1]:
                 falling_points = list(falling_points) + [window_end]
 
+            # Calculate duration for each above-baseline period and accumulate.
             for rise, fall in zip(rising_points, falling_points):
                 duration = fall - rise
                 total_duration_above += duration
                 timestamps_above.append((rise, fall))
                 print(f"Window from {rise} to {fall} is above baseline, contributing {duration} to the total.")
-        
-        # Convert total_duration_above from Timedelta to float (hours)
+
+        # Convert total_duration_above from Timedelta to float (hours) for easier handling.
         total_duration_hours = total_duration_above.total_seconds() / 3600
 
-        print(f"Total duration above baseline: {total_duration_above}")
+        print(f"Total duration above baseline: {total_duration_hours} hours")
         return total_duration_hours, timestamps_above
+
 
 
     def calculate_percent_customers_affected(self):
