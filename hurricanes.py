@@ -18,7 +18,7 @@ class Hurricane(NaturalHazard):
     def add_storm_system(self, storm_system):
         self.storm_systems.append(storm_system)
 
-    def print_basic_info(self):
+    def print_basic_hurricane_info(self):
         print(f"Hurricane Hazard Summary:")
         print(f"Type of Hazard: {self.type_of_hazard}")
         print(f"Total Property Damage: {self.total_property_damage}")
@@ -71,88 +71,98 @@ class Hurricane(NaturalHazard):
     
     def calculate_average_peak_outages(self):
         total_peak_outages = 0
+        valid_storm_count = 0  # Counter for storm systems after the threshold date
+        threshold_date = pd.to_datetime("2014-11-01 04:00:00")  # Define the threshold date
+
         if not self.storm_systems:
             print("No storm systems available.")
             self.customers_affected_sum = 0
             return
 
-        print(f"Calculating peak outages for {len(self.storm_systems)} storm systems...")
+        print(f"Calculating peak outages for storm systems after {threshold_date}...")
         for storm_system in self.storm_systems:
-            storm_outages = storm_system.calculate_peak_outages(self.eaglei_events)
-            print(f"Total peak outages for {storm_system.storm_name}: {storm_outages}")
-            total_peak_outages += storm_outages
+            # Only process storm systems that start after the threshold date
+            if pd.to_datetime(storm_system.start_date) > threshold_date:
+                storm_outages = storm_system.calculate_peak_outages(self.eaglei_events)
+                print(f"Total peak outages for {storm_system.storm_name} (after threshold): {storm_outages}")
+                total_peak_outages += storm_outages
+                valid_storm_count += 1  # Only increment for valid storm systems
 
-        self.customers_affected_sum = total_peak_outages / len(self.storm_systems)
-        print(f"Average Peak Outages: {self.customers_affected_sum}")
+        # Prevent division by zero if no valid storm systems were found
+        if valid_storm_count > 0:
+            self.customers_affected_sum = total_peak_outages / valid_storm_count
+            print(f"Average Peak Outages (after threshold): {self.customers_affected_sum}")
+        else:
+            self.customers_affected_sum = 0
+            print("No storm systems found after the threshold date. Average Peak Outages set to 0.")
 
     def calculate_regression_coefficients(self):
         # Preparing data for Frequency Coefficient
         year_frequency = {}
-        year_intensity_sum = {}
-        year_intensity_count = {}
+        intensities = []  # Directly store intensities of each storm
+        years = []  # Store years of each storm for intensity calculation
 
         for storm in self.storm_systems:
             year = storm.start_date.year
+            years.append(year)  # Append year for every storm
+            intensities.append(storm.intensity)  # Directly append storm intensity
             year_frequency[year] = year_frequency.get(year, 0) + 1
-            year_intensity_sum[year] = year_intensity_sum.get(year, 0) + storm.intensity
-            year_intensity_count[year] = year_intensity_count.get(year, 0) + 1
 
-        years = [] #fix logic for averaging intensity by year, its not necessary to average by year just plot the intensities and then get the line from that
-        frequencies = []
-        average_intensities = []
-
-        for year in year_frequency:
-            years.append(year)
-            frequencies.append(year_frequency[year])
-
-            if year_intensity_count[year] > 0:
-                average_intensity = year_intensity_sum[year] / year_intensity_count[year]
-                average_intensities.append(average_intensity)
-            else:
-                # Handle years with no storm systems
-                print(f"No storm systems recorded for the year {year}")
-                average_intensities.append(0)  # Or choose to handle this differently
+        frequencies = list(year_frequency.values())
+        unique_years = list(year_frequency.keys())  # Unique years for frequency calculation
 
         # Linear Regression for Frequency
-        if years:
-            slope_freq, intercept, r_value, p_value, std_err = stats.linregress(years, frequencies)
-            self.frequency_coefficient = slope_freq + 1
+        if unique_years:
+            slope_freq, intercept, r_value, p_value, std_err = stats.linregress(unique_years, frequencies)
+            frequency_coefficient = slope_freq + 1
 
             # Plotting Frequency
             plt.figure(figsize=(10, 5))
-            plt.scatter(years, frequencies, color='blue')
-            plt.plot(years, intercept + slope_freq * np.array(years), 'r')
+            plt.scatter(unique_years, frequencies, color='blue')
+            plt.plot(unique_years, intercept + slope_freq * np.array(unique_years), 'r')
             plt.title('Storm Frequency Over Time')
             plt.xlabel('Year')
             plt.ylabel('Frequency')
             plt.grid(True)
-            plt.show()
+            #plt.show()
         else:
             print("No data available for frequency analysis.")
+            frequency_coefficient = None
 
-        # Linear Regression for Average Intensity
+        # Linear Regression for Intensity
         if years:
-            slope_intensity, intercept, r_value, p_value, std_err = stats.linregress(years, average_intensities)
-            self.intensity_coefficient = slope_intensity + 1
+            slope_intensity, intercept, r_value, p_value, std_err = stats.linregress(years, intensities)
+            intensity_coefficient = slope_intensity + 1
 
             # Plotting Intensity
             plt.figure(figsize=(10, 5))
-            plt.scatter(years, average_intensities, color='green')
+            plt.scatter(years, intensities, color='green')
             plt.plot(years, intercept + slope_intensity * np.array(years), 'r')
-            plt.title('Average Storm Intensity Over Time')
+            plt.title('Storm Intensity Over Time')
             plt.xlabel('Year')
-            plt.ylabel('Average Intensity')
+            plt.ylabel('Intensity')
             plt.grid(True)
-            plt.show()
+            #plt.show()
         else:
             print("No data available for intensity analysis.")
-
-        return self.frequency_coefficient, self.intensity_coefficient
-    
+            intensity_coefficient = None
+        self.frequency_coefficient, self.intensity_coefficient = frequency_coefficient, intensity_coefficient
+        return frequency_coefficient, intensity_coefficient
+        
     def analyze_hurricane_data(self): #needs to be refactored for all natural hazards
         hazard_prefix = "HRCN"
-        total_property_damage = self.calculate_property_damage(hazard_prefix)
-        annualized_frequency = self.calculate_probability(hazard_prefix)
+        print(f"Hello! Starting analysis of hurricane data with prefix: {hazard_prefix}")
+        # Debug print to check NRI_data_fields contents
+        print(f"NRI_data_fields available: {hasattr(self, 'NRI_data_fields') and bool(self.NRI_data_fields)}")
+        if hasattr(self, 'NRI_data_fields'):
+            print(f"Sample NRI_data_fields content: {next(iter(self.NRI_data_fields.items()), ('No Data', 'N/A'))}")
+        try:
+            total_property_damage = self.calculate_property_damage(hazard_prefix)
+            annualized_frequency = self.calculate_probability(hazard_prefix)
+        except Exception as e:
+            print(f"Error during hurricane data analysis: {e}")
+            total_property_damage = 0
+            annualized_frequency = 0
 
         print(f"Total Property Damage for Hurricanes: {total_property_damage}")
         print(f"Annualized Frequency (Probability) of Hurricanes: {annualized_frequency}")
@@ -171,12 +181,6 @@ class Hurricane(NaturalHazard):
         # Specific implementation for hurricanes
         # Implement hurricane-specific risk calculation here
         pass
-
-    def print_basic_info(self):
-        # Specific implementation for hurricanes
-        print(f"Hurricane Hazard Summary:")
-        print(f"Type of Hazard: {self.type_of_hazard}")
-        # Include more specific details as needed
 
     def link_processed_noaa_events_to_storm_systems(self):
         """
@@ -309,7 +313,10 @@ class Hurricane(NaturalHazard):
             average_duration = 0.0
             print("\nNo storm systems with calculated durations found after the threshold date. Setting average duration to 0.")
 
-        self.average_duration_above_baseline = average_duration
+        self.average_duration_above_baseline = average_duration #attribute in natural hazards
+        self.total_time_duration_customer_affected = total_duration #attribute in hazards
+        self.avg_time_duration_customer_affected = average_duration #attribute in hazards
+
         print(f"\nAverage Eagle I Outage Duration Above Baseline for Hurricanes (after threshold date): {average_duration} hours")
         return average_duration
 

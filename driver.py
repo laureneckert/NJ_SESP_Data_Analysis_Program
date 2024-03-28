@@ -18,6 +18,18 @@ from natural_hazard import NaturalHazard
 from hurricanes import Hurricane
 from storm_system import StormSystem
 
+driver_config_flags = {
+
+    "force_recreate_noaa_hurricane_events": False,
+    "force_recreate_eagle_i_events": False,
+    "force_recreate_fema_nri_data": False,
+    "force_recreate_storm_systems": True,
+    "force_recreate_hurricanes": True,
+    "sort_and_assign_data": True
+
+}
+
+
 def check_for_pickles():
     if not os.path.exists(config['directories']['pickle_directory']): # Check if pickle directory exists
         os.makedirs(config['directories']['pickle_directory'])
@@ -27,19 +39,19 @@ def load_data():
         config['pickle_paths']['noaa_hurri'], 
         config['data_paths']['noaa']['noaa_hurricanes_files_directory'],
         NOAAEvent,
-        force_recreate=True
+        force_recreate=driver_config_flags["force_recreate_noaa_hurricane_events"]
         )
     eagle_i_events = DataSource.load_or_create( #Load or create Eagle I events
         config['pickle_paths']['eagle_i'], 
         config['data_paths']['eagle_i']['directory'],
         EagleIEvent,
-        force_recreate=True
+        force_recreate=driver_config_flags["force_recreate_eagle_i_events"]
     )
     fema_nri_data = DataSource.load_or_create( # Load or create FEMA NRI data
         config['pickle_paths']['fema_nri'],
         config['data_paths']['fema_nri']['file_path'],
         FEMA_NRI_data,
-        force_recreate=True
+        force_recreate=driver_config_flags["force_recreate_fema_nri_data"]
     )    
     #verification step
     print_data = True # Print data source samples?
@@ -59,11 +71,11 @@ def load_hurricane_related_stuff():
     storm_systems = StormSystem.load_or_create( # Load or create StormSystem objects for hurricane storms
         config['pickle_paths']['storm_systems'],
         config['data_paths']['hurricanes']['storm_systems_file'],
-        force_recreate=True
+        force_recreate=driver_config_flags["force_recreate_storm_systems"]
     )
     #Load or create hazard objects with default values
-    hurricanes = NaturalHazard.load_or_create(config['pickle_paths']['hurricanes'], Hurricane, force_recreate=True)
-    update_hurricanes_storm_systems_flag = True # Do you want to link the storm systems to the hurricanes hazard and then update the hurricanes pickle?
+    hurricanes = NaturalHazard.load_or_create(config['pickle_paths']['hurricanes'], Hurricane, force_recreate=driver_config_flags["force_recreate_hurricanes"])
+    update_hurricanes_storm_systems_flag = driver_config_flags["force_recreate_hurricanes"] # Do you want to link the storm systems to the hurricanes hazard and then update the hurricanes pickle?
     if update_hurricanes_storm_systems_flag: # Check the flag before proceeding
         print("Updating Hurricanes with new Storm Systems...")
         
@@ -97,7 +109,7 @@ def sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, h
         },
     }
 
-    sort_and_assign_then_save = True #Do you want to assign the data sources to the hazards? Do this if you just created new natural hazard objects or new data source objects.
+    sort_and_assign_then_save = driver_config_flags["sort_and_assign_data"] #Do you want to assign the data sources to the hazards? Do this if you just created new natural hazard objects or new data source objects.
     if sort_and_assign_then_save:
         print("Beginning sorting and assigning data sources to hazards")
 
@@ -213,29 +225,36 @@ def main(args=None):
 
     # After processing all storm systems, calculate the average duration for the hurricanes hazard
     hurricanes.calculate_average_eaglei_outage_duration()
-    print(f"Average duration per hurricane storm system of Eagle I outages above baseline: {hurricanes.average_duration_above_baseline}")
+    #print(f"Average duration per hurricane storm system of Eagle I outages above baseline: {hurricanes.average_duration_above_baseline}")
+    hurricanes.calculate_average_peak_outages()
+    hurricanes.calculate_percent_customers_affected()
+    hurricanes.calculate_regression_coefficients()
+    hurricanes.calculate_future_impact_coefficient()
+    hurricanes.analyze_hurricane_data()
+    hurricanes.print_basic_info()
+
+
+    #Print the result for verification
+    #print(f"Average Peak Outages: {hurricanes.customers_affected_sum}")
+    #print(f"Percent Customers Affected: {hurricanes.percent_customers_affected}%")
+
+    #print(f"Frequency Coefficient: {frequency_coefficient}")
+    #print(f"Intensity Coefficient: {intensity_coefficient}")
+    #print(f"Future Impact Coefficient: {future_impact_coefficient}")
+    # New step: Inspect NRI_data_fields structure
+    #for hazard in hazards:
+      #  hazard.print_nri_data_structure()
+
 
 
 if __name__ == "__main__":
-    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output15.txt"):
+    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output28.txt"):
         main()
 
 
 """
 #other in progress stuff here
-#Hurricanes   
-hurricanes.calculate_average_peak_outages() #NOT CORRECT LOL IM DUMB
-hurricanes.calculate_percent_customers_affected()  #SEE ABOVE
-frequency_coefficient, intensity_coefficient = hurricanes.calculate_regression_coefficients() #pretty sure this ones fine tho
-hurricanes.analyze_hurricane_data() #need to adjust this function cause IT DONT WORK
 
-#Print the result for verification
-print(f"Average Peak Outages: {hurricanes.customers_affected_sum}")
-print(f"Percent Customers Affected: {hurricanes.percent_customers_affected}%")
-
-print(f"Frequency Coefficient: {frequency_coefficient}")
-print(f"Intensity Coefficient: {intensity_coefficient}")
-#print(f"Future Impact Coefficient: *****here")
 
 #Save results
 pickle_path_for_hurricane = config['pickle_paths']['hurricanes']

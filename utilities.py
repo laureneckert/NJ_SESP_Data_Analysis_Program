@@ -91,3 +91,9 @@ def save_natural_hazards_to_pickle(hazards):
 def timedelta_to_hours(td):
     """Converts a Timedelta to hours as a float."""
     return td.total_seconds() / 3600.0
+
+def to_float(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0

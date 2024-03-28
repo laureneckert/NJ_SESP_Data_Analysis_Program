@@ -323,35 +323,45 @@ class FEMA_NRI_data(DataSource):
     @staticmethod
     def assign_data_to_hazard(hazards, fema_nri_entries, fema_to_hazard_mapping):
         """
-        Assigns FEMA data to each hazard based on their type and FEMA data prefixes.
+        Assigns FEMA data to each hazard based on their type and FEMA data prefixes, while maintaining county information.
 
         Parameters:
         hazards (list): List of hazard objects.
         fema_nri_entries (list): List of FEMA_NRI_data instances.
         fema_to_hazard_mapping (dict): Mapping of FEMA data field prefixes to hazard types.
         """
+        print("Starting assignment of FEMA NRI data to hazards...")
         for hazard in hazards:
             hazard_type = hazard.type_of_hazard
-            print(f"Assigning FEMA data to {hazard_type} hazard.")
+            print(f"\nAssigning FEMA data to {hazard_type} hazard...")
 
             if hazard_type in fema_to_hazard_mapping:
                 prefixes = fema_to_hazard_mapping[hazard_type]
 
                 for prefix in prefixes:
-                    print(f"Processing FEMA data for {hazard_type} with prefix {prefix}")
+                    print(f"\nProcessing FEMA data for {hazard_type} with prefix {prefix}...")
 
-                    # Initialize a dictionary to store FEMA data for this prefix
+                    # Initialize a nested dictionary to store FEMA data by county for this prefix
                     hazard.NRI_data_fields[prefix] = {}
 
                     for fema_entry in fema_nri_entries:
+                        county_name = fema_entry.COUNTY
+                        if county_name not in hazard.NRI_data_fields[prefix]:
+                            hazard.NRI_data_fields[prefix][county_name] = {}
+
                         for attr in FEMA_NRI_data.get_attributes():
                             if attr.startswith(prefix):
                                 # Extract the county-specific part of the attribute
                                 county_specific_attr = attr.replace(prefix + "_", "")
-                                hazard.NRI_data_fields[prefix][county_specific_attr] = getattr(fema_entry, attr, None)
-                    print(f"Added FEMA data with prefix {prefix} to {hazard_type} hazard.")
+                                value = getattr(fema_entry, attr, None)
+                                hazard.NRI_data_fields[prefix][county_name][county_specific_attr] = value
+
+                        print(f"Assigned FEMA data for {county_name} with prefix {prefix} to {hazard_type} hazard.")
+
             else:
-                print(f"No FEMA data mapping found for {hazard_type} hazard.")
+                print(f"No FEMA data mapping found for {hazard_type} hazard. Skipping...")
+
+        print("Completed assignment of FEMA NRI data to hazards.")
 
     # Mapping of hazard types to their FEMA NRI data prefixes
     hazard_to_fema_prefix = {

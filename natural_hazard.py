@@ -31,12 +31,6 @@ class NaturalHazard(Hazard):
         #self.outage_duration_by_county = {} #to delete?
         self.timestamps_above_baseline = []
 
-    def calculate_statistics(self, noaa_to_eaglei_mapping):
-        # Placeholder for method that calculates statistics based on NOAA and EagleI data
-        # Default implementation for natural hazards
-        # Implement generic behavior here
-        pass
-
     def calculate_scores(self):
         # Override the method from the parent class
         # Default implementation for natural hazards
@@ -50,8 +44,13 @@ class NaturalHazard(Hazard):
 
     def print_basic_info(self):
         # Default implementation for natural hazards
-        # Implement generic behavior here
+        # Print the specified information about the natural hazard
         print(f"Natural Hazard: {self.type_of_hazard}")
+        print(f"Percent Customers Affected: {self.percent_customers_affected}%")
+        print(f"Total Property Damage: ${self.total_property_damage:,.2f}")
+        print(f"Average Time Duration Customers Affected: {self.avg_time_duration_customer_affected} hours")
+        print(f"Historical Frequency: {self.historical_frequency}")
+        print(f"Future Impact Coefficient: {self.future_impact_coefficient}")
 
     def add_noaa_event(self, noaa_event):
         """
@@ -98,32 +97,42 @@ class NaturalHazard(Hazard):
             return data[0] if isinstance(data, list) else data
 
     def print_data_source_samples(self, sample_size=5):
-            """
-            Prints samples from each data source associated with the hazard.
+        """
+        Prints samples from each data source associated with the hazard, taking into account the new nested dictionary structure.
 
-            Parameters:
-            sample_size (int): The number of samples to print from each data source.
-            """
-            print(f"\n{self.type_of_hazard.upper()} Hazard Data Samples:")
+        Parameters:
+        sample_size (int): The number of samples to print from each data source.
+        """
+        print(f"\n{self.type_of_hazard.upper()} Hazard Data Samples:")
 
-            # Print NOAA Event Samples
-            print("\nNOAA Event Samples:")
-            for i, event in enumerate(self.noaa_events[:sample_size]):
-                print(f"Sample {i+1}: {event}")
+        # Print NOAA Event Samples
+        print("\nNOAA Event Samples:")
+        for i, event in enumerate(self.noaa_events[:sample_size]):
+            print(f"Sample {i+1}: {event}")
 
-            # Print Eagle I Event Samples
-            print("\nEagle I Event Samples:")
-            for i, event in enumerate(self.eaglei_events[:sample_size]):
-                print(f"Sample {i+1}: {event}")
+        # Print Eagle I Event Samples
+        print("\nEagle I Event Samples:")
+        for i, event in enumerate(self.eaglei_events[:sample_size]):
+            print(f"Sample {i+1}: {event}")
 
-            # Print FEMA NRI Data Samples
-            print("\nFEMA NRI Data Samples:")
-            for i, (key, value) in enumerate(self.NRI_data_fields.items()):
-                if i >= sample_size:
+        # Print FEMA NRI Data Samples, adjusted for new structure
+        print("\nFEMA NRI Data Samples:")
+        for hazard_prefix, counties_data in self.NRI_data_fields.items():
+            print(f"\nData for Hazard Prefix: {hazard_prefix}")
+            counties_sampled = 0
+            for county, data in counties_data.items():
+                if counties_sampled >= sample_size:
                     break
-                print(f"Sample {i+1}: {key} - {value}")
+                print(f"Sample for {county}:")
+                for data_key, data_value in data.items():
+                    print(f"  {data_key}: {data_value}")
+                counties_sampled += 1
+                if counties_sampled < sample_size:
+                    print("---")  # Separator if more samples follow
 
-            print("\nEnd of Data Samples")
+            if len(counties_data) > sample_size:
+                print(f"... and data for more counties not shown.")
+        print("\nEnd of Data Samples")
 
     def get_event_times(self, event): #for NOAA events, should probably go in that class
 
@@ -259,11 +268,9 @@ class NaturalHazard(Hazard):
         print(f"Total duration above baseline: {total_duration_hours} hours")
         return total_duration_hours, timestamps_above
 
-
-
     def calculate_percent_customers_affected(self):
         # Define the total number of customers in the state
-        total_customers_in_state = 4030000 #according to utilities websites
+        total_customers_in_state = 4170000 #from task 1
 
         if total_customers_in_state > 0:
             self.percent_customers_affected = (self.customers_affected_sum / total_customers_in_state) * 100
@@ -272,7 +279,7 @@ class NaturalHazard(Hazard):
 
     def calculate_property_damage(self, hazard_prefix):
         """
-        Calculates the total property damage for the hazard.
+        Calculates the total property damage for the hazard, aggregating data across all counties.
 
         Parameters:
         hazard_prefix (str): The prefix used for the specific natural hazard in FEMA data.
@@ -280,40 +287,100 @@ class NaturalHazard(Hazard):
         Returns:
         float: The total property damage for the hazard.
         """
-        exposure_attribute = f"{hazard_prefix}_EXPT"
-        loss_ratio_attribute = f"{hazard_prefix}_HLRR"
         property_damage = 0.0
 
-        for key, value in self.NRI_data_fields.items():
-            if key.startswith(exposure_attribute) and key.replace(exposure_attribute, loss_ratio_attribute) in self.NRI_data_fields:
-                exposure = value
-                loss_ratio = self.NRI_data_fields[key.replace(exposure_attribute, loss_ratio_attribute)]
-                property_damage += exposure * loss_ratio
+        print(f"\nCalculating property damage for hazard prefix: {hazard_prefix}...")
 
+        if hazard_prefix not in self.NRI_data_fields:
+            print(f"No data available for the hazard prefix: {hazard_prefix}")
+            return property_damage
+
+        for county, data in self.NRI_data_fields[hazard_prefix].items():
+            # Initialize variables to accumulate total exposure and loss ratios for each county
+            total_exposure = data.get("EXPT", 0.0)
+            total_loss_ratio = sum(data.get(attr, 0.0) for attr in ["HLRB", "HLRP"])
+
+            # Calculate property damage for the current county and add it to the total
+            county_property_damage = total_exposure * total_loss_ratio
+            property_damage += county_property_damage
+
+            print(f"County: {county}, Exposure: {total_exposure}, Loss Ratio Sum: {total_loss_ratio}, Incremental Damage: {county_property_damage}")
+
+        self.total_property_damage=property_damage
+        print(f"Total property damage calculated for {hazard_prefix}: {property_damage}")
         return property_damage
 
     def calculate_probability(self, hazard_prefix):
         """
-        Calculates the annualized frequency (probability) of the hazard.
+        Calculates the annualized frequency (probability) of the hazard by averaging
+        the annualized frequency of each county. Includes print statements to show calculation progress.
 
         Parameters:
         hazard_prefix (str): The prefix used for the specific natural hazard in FEMA data.
 
         Returns:
-        float: The annualized frequency of the hazard.
+        float: The average annualized frequency of the hazard across all counties.
         """
-        frequency_attribute = f"{hazard_prefix}_AFREQ"
         total_frequency = 0.0
         count = 0
 
-        for key, value in self.NRI_data_fields.items():
-            if key.startswith(frequency_attribute):
-                total_frequency += value
-                count += 1
+        if hazard_prefix not in self.NRI_data_fields:
+            print(f"No data available for the hazard prefix: {hazard_prefix}")
+            return 0.0
 
-        return total_frequency / count if count > 0 else 0.0
-    
+        print(f"Starting frequency calculation for hazard prefix: {hazard_prefix}")
+        for county, data in self.NRI_data_fields[hazard_prefix].items():
+            if "AFREQ" in data:
+                frequency = data["AFREQ"]
+                total_frequency += frequency
+                count += 1
+                print(f"County: {county}, Frequency: {frequency}")
+
+        average_frequency = total_frequency / count if count > 0 else 0.0
+        self.historical_frequency=average_frequency
+        print(f"Calculated average frequency for {hazard_prefix}: {average_frequency} (based on {count} counties)")
+        return average_frequency
+
     def calculate_average_eaglei_outage_duration(self):
         #placeholder for the implementation of the general case
         #hurricanes has its own implementation
         pass
+
+    def print_nri_data_structure(self):
+        print("Inspecting NRI_data_fields structure...")
+
+        if hasattr(self, 'NRI_data_fields') and isinstance(self.NRI_data_fields, dict):
+            print("NRI_data_fields is a dictionary.")
+            print(f"Top-level keys in NRI_data_fields: {list(self.NRI_data_fields.keys())}")
+
+            for hazard_prefix, data in self.NRI_data_fields.items():
+                if isinstance(data, dict):
+                    print(f"Structure for hazard prefix '{hazard_prefix}':")
+                    print(f"Keys: {list(data.keys())}")
+                    first_county_data = next(iter(data.values()), None)
+                    if isinstance(first_county_data, dict):
+                        print(f"Sample data for the first county under '{hazard_prefix}':")
+                        for key, value in first_county_data.items():
+                            print(f"{key}: {value}")
+                else:
+                    print(f"The data for hazard prefix '{hazard_prefix}' is not a dictionary. Actual type: {type(data)}")
+                break  # Remove this if you want to print all hazard prefixes
+        else:
+            print("NRI_data_fields does not exist or is not a dictionary.")
+
+    def calculate_future_impact_coefficient(self):
+        """
+        Calculates the future impact coefficient by multiplying the frequency coefficient
+        by the intensity coefficient. The result is assigned to the future_impact_coefficient attribute.
+        Detailed print statements are included to show the calculation progress.
+        """
+        print("Starting calculation of the Future Impact Coefficient...")
+        print(f"Frequency Coefficient: {self.frequency_coefficient}")
+        print(f"Intensity Coefficient: {self.intensity_coefficient}")
+
+        # Calculate future impact coefficient
+        self.future_impact_coefficient = self.frequency_coefficient * self.intensity_coefficient
+        
+        print(f"Future Impact Coefficient (Frequency Coefficient * Intensity Coefficient): {self.future_impact_coefficient}")
+        
+        return self.future_impact_coefficient
