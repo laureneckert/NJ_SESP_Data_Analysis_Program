@@ -2,7 +2,7 @@
 #Lauren Eckert
 #Version 2
 
-#tornado class
+#flooding class
 from natural_hazard import NaturalHazard
 import utilities as uti
 import matplotlib.pyplot as plt
@@ -10,6 +10,6 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-class Tornados(NaturalHazard):
-    def __init__(self, type_of_hazard='tornados'):
+class Flooding(NaturalHazard):
+    def __init__(self, type_of_hazard='flooding'):
         super().__init__(type_of_hazard)

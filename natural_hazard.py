@@ -279,36 +279,39 @@ class NaturalHazard(Hazard):
 
     def calculate_property_damage(self, hazard_prefix):
         """
-        Calculates the total property damage for the hazard, aggregating data across all counties.
+        Calculates the total property damage for the hazard, specifically for buildings, 
+        by aggregating data across all counties and multiplying the building exposure 
+        by the building loss ratio for each county.
 
         Parameters:
         hazard_prefix (str): The prefix used for the specific natural hazard in FEMA data.
 
         Returns:
-        float: The total property damage for the hazard.
+        float: The total property damage for buildings for the hazard statewide.
         """
         property_damage = 0.0
 
-        print(f"\nCalculating property damage for hazard prefix: {hazard_prefix}...")
+        print(f"\nCalculating property damage for buildings for hazard prefix: {hazard_prefix}...")
 
         if hazard_prefix not in self.NRI_data_fields:
             print(f"No data available for the hazard prefix: {hazard_prefix}")
             return property_damage
 
         for county, data in self.NRI_data_fields[hazard_prefix].items():
-            # Initialize variables to accumulate total exposure and loss ratios for each county
-            total_exposure = data.get("EXPT", 0.0)
-            total_loss_ratio = sum(data.get(attr, 0.0) for attr in ["HLRB", "HLRP"])
+            # Use the specific attributes for buildings: EXPB for exposure and HLRB for loss ratio
+            building_exposure = data.get("EXPB", 0.0)
+            building_loss_ratio = data.get("HLRB", 0.0)
 
-            # Calculate property damage for the current county and add it to the total
-            county_property_damage = total_exposure * total_loss_ratio
+            # Calculate property damage for buildings in the current county
+            county_property_damage = building_exposure * building_loss_ratio
             property_damage += county_property_damage
 
-            print(f"County: {county}, Exposure: {total_exposure}, Loss Ratio Sum: {total_loss_ratio}, Incremental Damage: {county_property_damage}")
+            print(f"County: {county}, Building Exposure: {building_exposure}, Building Loss Ratio: {building_loss_ratio}, Incremental Damage: {county_property_damage}")
 
-        self.total_property_damage=property_damage
-        print(f"Total property damage calculated for {hazard_prefix}: {property_damage}")
+        self.total_property_damage = property_damage
+        print(f"Total property damage for buildings calculated for {hazard_prefix}: {property_damage}")
         return property_damage
+
 
     def calculate_probability(self, hazard_prefix):
         """

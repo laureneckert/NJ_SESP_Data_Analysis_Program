@@ -6,6 +6,10 @@
 
 import pandas as pd
 import os
+import csv
+import re
+import glob
+from njsesp_config import config
 from DataSource import DataSource
 
 class NOAAEvent(DataSource):
@@ -56,7 +60,90 @@ class NOAAEvent(DataSource):
         self.weather_event_type = weather_event_type
         self.filename = filename
         self.line_number = line_number       
+
+    def clean_csv_file(source_file_path, output_file_path): #does not work dont use
+        """
+        Cleans specific fields in a CSV file to handle problematic characters, with verbose output.
+
+        Parameters:
+        source_file_path (str): Path to the source CSV file.
+        output_file_path (str): Path to save the cleaned CSV file.
+        """
+        print(f"Opening source file for cleaning: {source_file_path}")
+        with open(source_file_path, mode='r', newline='', encoding='utf-8') as infile, open(output_file_path, mode='w', newline='', encoding='utf-8') as outfile:
+            reader = csv.DictReader(infile)
+            writer = csv.DictWriter(outfile, fieldnames=reader.fieldnames)
+            writer.writeheader()
+
+            for row in reader:
+                # Clean EPISODE_NARRATIVE
+                episode_narrative_original = row.get('EPISODE_NARRATIVE', '')
+                episode_narrative_cleaned = episode_narrative_original.replace('\n', ' ').replace('\r', ' ').replace('"', "'")
+                row['EPISODE_NARRATIVE'] = episode_narrative_cleaned
+
+                # Clean SOURCE
+                source_original = row.get('SOURCE', '')
+                source_cleaned = source_original.replace(',', ';')
+                row['SOURCE'] = source_cleaned
+
+                # Print what's being cleaned
+                if episode_narrative_original != episode_narrative_cleaned:
+                    print(f"Cleaned EPISODE_NARRATIVE: \"{episode_narrative_original[:50]}...\" to \"{episode_narrative_cleaned[:50]}...\"")
+                if source_original != source_cleaned:
+                    print(f"Cleaned SOURCE: \"{source_original}\" to \"{source_cleaned}\"")
+
+                writer.writerow(row)
+
+        print(f"Cleaning complete. File saved to: {output_file_path}")
+
+    @staticmethod
+    def clean_noaa_data(): #file handling works but the cleaning method doesnt so cant use
         
+        """
+        Cleans CSV files in each uncleaned data directory for NOAA hazards and saves them into the corresponding cleaned data directory
+        with the prefix 'cleaned_' added to each filename.
+        """
+        print("Starting cleaning and sorting NOAA data.")
+
+        base_uncleaned_path = config['data_paths']['noaa']['base_uncleaned_data_directory']
+        base_cleaned_path = config['data_paths']['noaa']['base_cleaned_data_directory']
+
+        if not os.path.isdir(base_uncleaned_path):
+            print(f"Base uncleaned data directory does not exist: {base_uncleaned_path}")
+            return
+
+        # Loop through each hazard type directory within the base uncleaned directory
+        for hazard_folder in os.listdir(base_uncleaned_path):
+            hazard_uncleaned_path = os.path.join(base_uncleaned_path, hazard_folder)
+            if not os.path.isdir(hazard_uncleaned_path):
+                continue  # Skip if it's not a directory
+
+            print(f"Processing uncleaned NOAA data for {hazard_folder}...")
+
+            csv_files = glob.glob(os.path.join(hazard_uncleaned_path, '*.csv'))
+            if not csv_files:
+                print(f"No CSV files found for {hazard_folder}.")
+                continue
+
+            # Ensure the cleaned data folder exists
+            cleaned_hazard_path = os.path.join(base_cleaned_path, hazard_folder)
+            if not os.path.exists(cleaned_hazard_path):
+                os.makedirs(cleaned_hazard_path)
+
+            for csv_file in csv_files:
+                try:
+                    filename = os.path.basename(csv_file)
+                    cleaned_filename = "cleaned_" + filename
+                    cleaned_file_path = os.path.join(cleaned_hazard_path, cleaned_filename)
+
+                    # Clean the CSV and write to the corresponding hazard's cleaned data directory
+                    NOAAEvent.clean_csv_file(csv_file, cleaned_file_path)
+                    print(f"Cleaned and saved {cleaned_filename} for {hazard_folder}.")
+                except Exception as e:
+                    print(f"Failed to clean {filename} for {hazard_folder}: {e}")
+
+        print("Completed cleaning and sorting NOAA data.")
+
     def extract_data(directory_path):
         """
         Reads NOAA event data from CSV files in a directory and creates NOAAEvent objects.

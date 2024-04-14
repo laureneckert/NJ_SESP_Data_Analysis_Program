@@ -16,31 +16,104 @@ from FEMA_NRI_data import FEMA_NRI_data
 from hazard import Hazard
 from natural_hazard import NaturalHazard
 from hurricanes import Hurricane
+from lightning import Lightning
+from winter_storms import WinterStorms
+from tornados import Tornados
+from wildfire import Wildfires
+from flooding import Flooding
+from hail import Hail
+from strong_wind import StrongWinds
 from storm_system import StormSystem
 
 driver_config_flags = {
 
-    "force_recreate_noaa_hurricane_events": False,
+    "force_recreate_noaa_hurricanes_events": True,
+    "force_recreate_noaa_lightning_events": True,
+    "force_recreate_noaa_winter_storms_events": True,
+    "force_recreate_noaa_tornados_events": True,
+    "force_recreate_noaa_wildfires_events": True,
+    "force_recreate_noaa_flooding_events": True,
+    "force_recreate_noaa_hail_events": True,
+    "force_recreate_noaa_strong_winds_events": True,
+
     "force_recreate_eagle_i_events": False,
     "force_recreate_fema_nri_data": False,
+    
     "force_recreate_storm_systems": True,
+    "force_recreate_lightning" : True,
     "force_recreate_hurricanes": True,
-    "sort_and_assign_data": True
+    "force_recreate_winter_storms" : True,
+    "force_recreate_tornados" : True,
+    "force_recreate_wildfires" : True,
+    "force_recreate_flooding" : True,
+    "force_recreate_hail" : True,
+    "force_recreate_strong_winds" : True,
 
+    "sort_and_assign_data" : True
 }
-
 
 def check_for_pickles():
     if not os.path.exists(config['directories']['pickle_directory']): # Check if pickle directory exists
         os.makedirs(config['directories']['pickle_directory'])
 
 def load_data():
+    #NOAA Hurricanes
     noaa_hurricane_events = DataSource.load_or_create( # Load or create NOAA hurricane events
         config['pickle_paths']['noaa_hurri'], 
         config['data_paths']['noaa']['noaa_hurricanes_files_directory'],
         NOAAEvent,
-        force_recreate=driver_config_flags["force_recreate_noaa_hurricane_events"]
+        force_recreate=driver_config_flags["force_recreate_noaa_hurricanes_events"]
         )
+    #NOAA lightning
+    noaa_lightning_events = DataSource.load_or_create( #Load or create NOAA lightning events
+        config['pickle_paths']['noaa_lightning'], 
+        config['data_paths']['noaa']['noaa_lightning_files_directory'],
+        NOAAEvent,
+        force_recreate=driver_config_flags["force_recreate_noaa_lightning_events"]
+        )
+    #NOAA winter storms
+    noaa_winter_storms_events = DataSource.load_or_create( #Load or create NOAA winter storms events
+        config['pickle_paths']['noaa_winter_storms'], 
+        config['data_paths']['noaa']['noaa_winter_storms_files_directory'],
+        NOAAEvent,
+        force_recreate=driver_config_flags["force_recreate_noaa_winter_storms_events"]
+        )
+    #NOAA tornado
+    noaa_tornado_events = DataSource.load_or_create( #Load or create NOAA tornado events
+        config['pickle_paths']['noaa_tornados'], 
+        config['data_paths']['noaa']['noaa_tornados_files_directory'],
+        NOAAEvent,
+        force_recreate=driver_config_flags["force_recreate_noaa_tornados_events"]
+        )
+    #NOAA wildfire
+    noaa_wildfire_events = DataSource.load_or_create( #Load or create NOAA wildfire events
+        config['pickle_paths']['noaa_wildfires'], 
+        config['data_paths']['noaa']['noaa_wildfires_files_directory'],
+        NOAAEvent,
+        force_recreate=driver_config_flags["force_recreate_noaa_wildfires_events"]
+        )
+    #NOAA flooding
+    noaa_flooding_events = DataSource.load_or_create( #Load or create NOAA flooding events
+        config['pickle_paths']['noaa_flooding'], 
+        config['data_paths']['noaa']['noaa_flooding_files_directory'],
+        NOAAEvent,
+        force_recreate=driver_config_flags["force_recreate_noaa_flooding_events"]
+        )
+    #NOAA hail
+    noaa_hail_events = DataSource.load_or_create( #Load or create NOAA hail events
+        config['pickle_paths']['noaa_hail'], 
+        config['data_paths']['noaa']['noaa_hail_files_directory'],
+        NOAAEvent,
+        force_recreate=driver_config_flags["force_recreate_noaa_hail_events"]
+        )
+    #NOAA strong wind
+    noaa_strong_wind_events = DataSource.load_or_create( #Load or create NOAA strong wind events
+        config['pickle_paths']['noaa_strong_winds'], 
+        config['data_paths']['noaa']['noaa_strong_winds_files_directory'],
+        NOAAEvent,
+        force_recreate=driver_config_flags["force_recreate_noaa_strong_winds_events"]
+        )
+
     eagle_i_events = DataSource.load_or_create( #Load or create Eagle I events
         config['pickle_paths']['eagle_i'], 
         config['data_paths']['eagle_i']['directory'],
@@ -58,6 +131,37 @@ def load_data():
     if print_data:
         if noaa_hurricane_events:
             NOAAEvent.print_samples(noaa_hurricane_events, 30)
+        else:
+            print("No NOAA hurricane events in driver.")
+        if noaa_lightning_events:
+            NOAAEvent.print_samples(noaa_lightning_events, 30)
+        else:
+            print("No NOAA lightning events in driver.")
+        if noaa_winter_storms_events:
+            NOAAEvent.print_samples(noaa_winter_storms_events, 30)
+        else:
+            print("No NOAA winter storm events in driver.")
+        if noaa_flooding_events:
+            NOAAEvent.print_samples(noaa_flooding_events, 30)
+        else:
+            print("No NOAA flooding events in driver.")
+        if noaa_tornado_events:
+            NOAAEvent.print_samples(noaa_tornado_events, 30)
+        else:
+            print("No NOAA tornado events in driver.")
+        if noaa_wildfire_events:
+            NOAAEvent.print_samples(noaa_wildfire_events, 30)
+        else:
+            print("No NOAA wildfire events in driver.")
+        if noaa_hail_events:
+            NOAAEvent.print_samples(noaa_hail_events, 30)
+        else:
+            print("No NOAA hail events in driver.")
+        if noaa_strong_wind_events:
+            NOAAEvent.print_samples(noaa_strong_wind_events, 30)
+        else:
+            print("No NOAA strong wind events in driver.")
+        
         if eagle_i_events:
             EagleIEvent.print_samples(eagle_i_events, 30)
         if fema_nri_data:
@@ -65,7 +169,7 @@ def load_data():
     else:
         print("Print NOAA, Ealge I, FEMA data sample flag off. Skipping.")
 
-    return noaa_hurricane_events, eagle_i_events, fema_nri_data
+    return noaa_hurricane_events, noaa_lightning_events, noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, noaa_hail_events, noaa_strong_wind_events, eagle_i_events, fema_nri_data
 
 def load_hurricane_related_stuff():
     storm_systems = StormSystem.load_or_create( # Load or create StormSystem objects for hurricane storms
@@ -99,14 +203,52 @@ def load_hurricane_related_stuff():
     
     return storm_systems, hurricanes
 
-def sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, hurricanes, hazards):
+def sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, noaa_lightning_events,
+                          noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, 
+                          noaa_hail_events, noaa_strong_wind_events, hurricanes, lightning, winter_storms, flooding,
+                          tornados, wildfires, hail, strong_winds, hazards):
     #Define the mapping of NOAA event groups to hazards
     noaa_event_groups = {
         'Hurricane': {
             'events': noaa_hurricane_events,
             'hazard': hurricanes,
             'type_of_hazard': 'hurricanes'  # Explicitly specify the type of hazard
+        },    
+        'Lightning': {
+            'events': noaa_lightning_events,
+            'hazard': lightning,
+            'type_of_hazard' : 'lightning'
         },
+        'WinterStorms' : {
+            'events' : noaa_winter_storms_events,
+            'hazard' : winter_storms,
+            'type_of_hazard' : 'winter_storms'
+        },
+        'Flooding' : {
+            'events' : noaa_flooding_events,
+            'hazard' : flooding,
+            'type_of_hazard' : 'flooding'
+        },
+        'Tornados' : {
+            'events' : noaa_tornado_events,
+            'hazard' : tornados,
+            'type_of_hazard' : 'tornados'
+        },
+        'Wildfires' : {
+            'events' : noaa_wildfire_events,
+            'hazard' : wildfires,
+            'type_of_hazard' : 'wildfires'
+        },
+        'Hail' : {
+            'events' : noaa_hail_events,
+            'hazard' : hail,
+            'type_of_hazard' : 'hail'
+        },
+        'StrongWinds' : {
+            'events' : noaa_strong_wind_events,
+            'hazard' : strong_winds,
+            'type_of_hazard' : 'strong_winds'
+        }
     }
 
     sort_and_assign_then_save = driver_config_flags["sort_and_assign_data"] #Do you want to assign the data sources to the hazards? Do this if you just created new natural hazard objects or new data source objects.
@@ -114,19 +256,12 @@ def sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, h
         print("Beginning sorting and assigning data sources to hazards")
 
         FEMA_NRI_data.assign_data_to_hazard(hazards, fema_nri_data, FEMA_NRI_data.hazard_to_fema_prefix)
-        # Save the updated hazard objects
-        pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
-        uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
         
         NOAAEvent.assign_and_link_noaa_events_to_hazard(noaa_event_groups) # assign and link NOAA events to hazards
-        # Save the updated hazard objects
-        pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
-        uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
 
         EagleIEvent.assign_eagle_i_events_to_hazards(hazards, eagle_i_events, EagleIEvent.noaa_to_eaglei_mapping) # Filter & Assign Eagle I events to hazards
-        # Save the updated hazard objects
-        pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
-        uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
+
+        #@TODO save hazard objects after sorting
     
     else:
         print("Sorting and assigning data skipped.")
@@ -155,38 +290,10 @@ def data_processing_for_eaglei(eagle_i_events, noaa_hurricane_events, storm_syst
 
     return ewma_data, seasonal_baseline
 
-def main(args=None):
-    """Main entry point of the program."""
-    if args is None:
-        args = sys.argv[1:]
-    
-    #Step 1: Check for pickles (pre-loaded and saved data ready to use)
-    check_for_pickles()
-    #Step 2: Load or create data source objects
-    noaa_hurricane_events, eagle_i_events, fema_nri_data = load_data()
-    #Step 3: Loading and creating natural hazards NOTE: Each natural hazard has one object for each subclass to store all the relevant variables in, the subclasses represent the entire risk, not individual events of the risk
-    storm_systems, hurricanes = load_hurricane_related_stuff() #Hurricanes
-        #winter storms
-        #tornados
-        #flooding
-        #lightning
-
-    # Initialize list of all hazards
-    hazards = [hurricanes] # Add other hazards to this list
-
-    #Step 4: Assigning data from NOAA, filtering EagleI then assigning, and assigning FEMA NRI data to relevant hazards
-    sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, hurricanes, hazards)
-
-    #Step 5: Data processing for natural hazards - calculating EWMA, seasonal baseline, plotting results
-    ewma_data, seasonal_baseline = data_processing_for_eaglei(eagle_i_events, noaa_hurricane_events, storm_systems)
-
-    #5.2 processing the noaa events to get the event windows without overlaps
+def process_hurricanes(ewma_data, seasonal_baseline, hurricanes, storm_systems):
     hurricanes.process_noaa_events()
-    print("-------------------------------------------------")
     hurricanes.link_and_print_summary()
-    print("-------------------------------------------------")
-    unlinked_noaa_windows = hurricanes.identify_unlinked_noaa_windows()
-    print("-------------------------------------------------")    
+    unlinked_noaa_windows = hurricanes.identify_unlinked_noaa_windows() 
     # Assuming the identify_unlinked_noaa_windows method is adjusted to return the list of unlinked windows
     if unlinked_noaa_windows:
         print("Attempting to link unlinked NOAA event windows to storm systems based on file names.")
@@ -194,9 +301,8 @@ def main(args=None):
     else:
         print("No unlinked NOAA event windows to process.")
     hurricanes.identify_unlinked_noaa_windows(return_unlinked=False)
-    #hurricanes.print_noaa_window_summary()
+    hurricanes.print_noaa_window_summary()
     print("-------------------------------------------------")
-    # After processing NOAA events and linking unlinked windows
     print("\nVerifying linked NOAA event windows for each storm system:")
 
     # Example code for iterating over storm systems to verify linked NOAA event windows
@@ -232,33 +338,73 @@ def main(args=None):
     hurricanes.calculate_future_impact_coefficient()
     hurricanes.analyze_hurricane_data()
     hurricanes.print_basic_info()
+    
+    #Save results
+    pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
+    uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
+    pickle_path_for_storm_systems = config['pickle_paths']['storm_systems']
+    uti.save_to_pickle(storm_systems, pickle_path_for_storm_systems)
 
+def main(args=None):
+    """Main entry point of the program."""
+    if args is None:
+        args = sys.argv[1:]
+    
+    #Step 1: Check for pickles (pre-loaded and saved data ready to use)
+    check_for_pickles()
+    #Clean Data
+    #NOAAEvent.clean_noaa_data() #not working, just did it manually
+    #Step 2: Load or create data source objects
+    noaa_hurricane_events, noaa_lightning_events, noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, noaa_hail_events, noaa_strong_wind_events, eagle_i_events, fema_nri_data = load_data()
+    #Step 3: Loading and creating natural hazards NOTE: Each natural hazard has one object for each subclass to store all the relevant variables in, the subclasses represent the entire risk, not individual events of the risk
+    #hurricanes
+    storm_systems, hurricanes = load_hurricane_related_stuff() #Hurricanes
+    #winter storms
+    winter_storms = NaturalHazard.load_or_create(config['pickle_paths']['winter_storms'], WinterStorms, force_recreate=driver_config_flags["force_recreate_winter_storms"])
+    #tornado
+    tornados = NaturalHazard.load_or_create(config['pickle_paths']['tornados'], Tornados, force_recreate=driver_config_flags["force_recreate_tornados"])
+    #wildfire
+    wildfires = NaturalHazard.load_or_create(config['pickle_paths']['wildfires'], Wildfires, force_recreate=driver_config_flags["force_recreate_wildfires"])
+    #flooding
+    flooding = NaturalHazard.load_or_create(config['pickle_paths']['flooding'], Flooding, force_recreate=driver_config_flags["force_recreate_flooding"])
+    #hail
+    hail = NaturalHazard.load_or_create(config['pickle_paths']['hail'], Hail, force_recreate=driver_config_flags["force_recreate_hail"])
+    #strong wind
+    strong_winds = NaturalHazard.load_or_create(config['pickle_paths']['strong_winds'], StrongWinds, force_recreate=driver_config_flags["force_recreate_strong_winds"])
+    #lightning
+    lightning = NaturalHazard.load_or_create(config['pickle_paths']['lightning'], Lightning, force_recreate=driver_config_flags["force_recreate_lightning"])
+    #earthquakes
 
-    #Print the result for verification
-    #print(f"Average Peak Outages: {hurricanes.customers_affected_sum}")
-    #print(f"Percent Customers Affected: {hurricanes.percent_customers_affected}%")
+    # Initialize list of all hazards
+    hazards = [hurricanes, tornados, wildfires, winter_storms, flooding, hail, strong_winds, lightning] # Add other hazards to this list
+    for hazard in hazards:
+        try:
+            hazard_type = hazard.type_of_hazard
+            print(f"\n{hazard} is a {hazard_type}")
+        except Exception as e:
+            print(f"\n Hazard {hazard} is having an issue with the type of hazard attribute. Issue: {e}")
+            hazard.type_of_hazard = 'test'
+            continue
+        try:
+            hazard_type = hazard.type_of_hazard
+            print(f"\n{hazard} is a {hazard_type}")
+        except Exception as e:
+            print(f"\n Hazard {hazard} is STILLLLL having an issue with the type of hazard attribute. Issue: {e}")
+            continue
+            
 
-    #print(f"Frequency Coefficient: {frequency_coefficient}")
-    #print(f"Intensity Coefficient: {intensity_coefficient}")
-    #print(f"Future Impact Coefficient: {future_impact_coefficient}")
-    # New step: Inspect NRI_data_fields structure
-    #for hazard in hazards:
-      #  hazard.print_nri_data_structure()
+    #Step 4: Assigning data from NOAA, filtering EagleI then assigning, and assigning FEMA NRI data to relevant hazards
+    sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, noaa_lightning_events, 
+                         noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, 
+                         noaa_hail_events, noaa_strong_wind_events, hurricanes, lightning, winter_storms, flooding, 
+                         tornados, wildfires, hail, strong_winds, hazards)
 
+    #Step 5: Data processing for natural hazards - calculating EWMA, seasonal baseline, plotting results
+    ewma_data, seasonal_baseline = data_processing_for_eaglei(eagle_i_events, noaa_hurricane_events, storm_systems)
 
+    #Step 6: Data Analysis
+    process_hurricanes(ewma_data, seasonal_baseline, hurricanes, storm_systems)
 
 if __name__ == "__main__":
-    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output28.txt"):
+    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output34.txt"):
         main()
-
-
-"""
-#other in progress stuff here
-
-
-#Save results
-pickle_path_for_hurricane = config['pickle_paths']['hurricanes']
-uti.save_to_pickle(hurricanes, pickle_path_for_hurricane)
-pickle_path_for_storm_systems = config['pickle_paths']['storm_systems']
-uti.save_to_pickle(storm_systems, pickle_path_for_storm_systems)
-"""
