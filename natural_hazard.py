@@ -26,6 +26,8 @@ class NaturalHazard(Hazard):
         
         self.eaglei_events = []
         self.unique_eaglei_regions = set()
+        self.total_duration_eaglei = 0
+        self.outage_duration_by_county = {}
         
         self.average_duration_above_baseline = 0.0 #average per threat incident
         #self.outage_duration_by_county = {} #to delete?
@@ -70,14 +72,47 @@ class NaturalHazard(Hazard):
         """
         self.eaglei_events.append(eaglei_event)
 
-    @staticmethod
-    @abstractmethod
-    def create_default_instances():
+    @classmethod
+    def create_default_instances(cls):
         """
-        Creates new hazard instances with default values.
-        This method should be implemented in each subclass.
+        Creates a default instance of a subclass of NaturalHazard with initialized attributes.
+        The subclass type is dynamically determined based on which subclass calls this method.
         """
-        pass
+        instance = cls()  # Dynamically create an instance of the subclass
+
+        # Initialize attributes inherited from Hazard
+        instance.total_property_damage = 0.0
+        instance.property_damage_by_county = {}  # Default mapping of county to damage amount
+        instance.percent_customers_affected = 0.0
+        instance.customers_affected_sum = 0  # Default sum of customers affected
+        instance.total_time_duration_customer_affected = 0.0  # Total time duration of customer impact
+        instance.avg_time_duration_customer_affected = 0.0  # Average time duration per threat incident
+        instance.historical_frequency = 0.0
+        instance.future_impact_coefficient = 0.0
+        instance.frequency_coefficient = 0.0
+        instance.intensity_coefficient = 0.0
+        instance.risk_score = 0.0  # Default risk score calculation
+
+        # Attributes specific to NaturalHazard
+        instance.NRI_data_fields = {}  # Default NRI data fields
+        instance.noaa_events = []  # List of associated NOAA events
+        instance.noaa_event_count = 0  # Count of NOAA events
+        instance.processed_noaa_windows = []  # List of processed NOAA event windows
+        instance.threat_incident_count = 0  # Count of threat incidents
+        instance.unique_noaa_regions = set()  # Set of unique NOAA regions
+        instance.unique_noaa_event_types = set()  # Set of unique NOAA event types
+
+        instance.total_outages_sum = 0  # Sum of total outages
+        instance.outage_total_by_county = {}  # Mapping of county to total outages
+        instance.eaglei_events = []  # List of associated Eagle I events
+        instance.unique_eaglei_regions = set()  # Set of unique Eagle I regions
+        instance.total_duration_eaglei = 0  # Total duration of Eagle I outages
+        instance.outage_duration_by_county = {}  # Mapping of county to outage durations
+        
+        instance.average_duration_above_baseline = 0.0  # Average duration above baseline
+        instance.timestamps_above_baseline = []  # List of timestamps above baseline for analysis
+
+        return instance
 
     @staticmethod
     def load_or_create(pickle_path, subclass, force_recreate=False):

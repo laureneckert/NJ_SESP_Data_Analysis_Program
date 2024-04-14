@@ -366,19 +366,19 @@ class FEMA_NRI_data(DataSource):
     # Mapping of hazard types to their FEMA NRI data prefixes
     hazard_to_fema_prefix = {
         'hurricanes': ['HRCN'],               # Hurricane
-        'earthquake': ['ERQK'],              # Earthquake
+        'earthquakes': ['ERQK'],              # Earthquake
         'flooding': ['RFLD', 'CFLD'],        # Flooding (Riverine Flooding, Coastal Flooding)
-        'avalanche': ['AVLN'],               # Avalanche
+        'avalanches': ['AVLN'],               # Avalanche
         'drought': ['DRGT'],                 # Drought
         'hail': ['HAIL'],                    # Hail
-        'heat_wave': ['HWAV'],               # Heat Wave
-        'landslide': ['LNDS'],               # Landslide
+        'heat_waves': ['HWAV'],               # Heat Wave
+        'landslides': ['LNDS'],               # Landslide
         'lightning': ['LTNG'],               # Lightning
-        'strong_wind': ['SWND'],             # Strong Wind
-        'tornado': ['TRND'],                 # Tornado
-        'tsunami': ['TSUN'],                 # Tsunami
+        'strong_winds': ['SWND'],             # Strong Wind
+        'tornados': ['TRND'],                 # Tornado
+        'tsunamis': ['TSUN'],                 # Tsunami
         'volcanic_activity': ['VLCN'],       # Volcanic Activity
-        'wildfire': ['WFIR'],                # Wildfire
+        'wildfires': ['WFIR'],                # Wildfire
         'winter_storms': ['CWAV', 'ISTM', 'WNTW'],  # Winter Storms (Cold Wave, Ice Storm, Winter Weather) #three prefixes might cause a bug - need to verify when doing winter storms
     }
 

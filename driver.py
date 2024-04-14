@@ -36,8 +36,8 @@ driver_config_flags = {
     "force_recreate_noaa_hail_events": True,
     "force_recreate_noaa_strong_winds_events": True,
 
-    "force_recreate_eagle_i_events": False,
-    "force_recreate_fema_nri_data": False,
+    "force_recreate_eagle_i_events": True,
+    "force_recreate_fema_nri_data": True,
     
     "force_recreate_storm_systems": True,
     "force_recreate_lightning" : True,
@@ -377,6 +377,7 @@ def main(args=None):
 
     # Initialize list of all hazards
     hazards = [hurricanes, tornados, wildfires, winter_storms, flooding, hail, strong_winds, lightning] # Add other hazards to this list
+    #verification step/previous debugging
     for hazard in hazards:
         try:
             hazard_type = hazard.type_of_hazard
@@ -387,7 +388,7 @@ def main(args=None):
             continue
         try:
             hazard_type = hazard.type_of_hazard
-            print(f"\n{hazard} is a {hazard_type}")
+            print(f"\n{hazard} is definitely a {hazard_type}")
         except Exception as e:
             print(f"\n Hazard {hazard} is STILLLLL having an issue with the type of hazard attribute. Issue: {e}")
             continue
@@ -406,5 +407,5 @@ def main(args=None):
     process_hurricanes(ewma_data, seasonal_baseline, hurricanes, storm_systems)
 
 if __name__ == "__main__":
-    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output34.txt"):
+    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output37.txt"):
         main()

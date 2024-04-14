@@ -81,9 +81,12 @@ class EagleIEvent(DataSource):
 
         # Dictionary to keep track of the last checked index for NOAA events in each region
         last_checked_index_per_region = {region: 0 for region in noaa_events_processed}
-        
+        # After initializing the dictionary
+        print("Regions available in NOAA data:", last_checked_index_per_region.keys())
+
         filtered_events = []
         non_match_counter = 0  # Counter for non-matching events
+        missing_region_warnings = defaultdict(int)  # Count occurrences of missing region warnings
 
         for eagle_i_event in eagle_i_events:
             eagle_i_time = eagle_i_event['run_start_time']
@@ -95,6 +98,14 @@ class EagleIEvent(DataSource):
 
             region = eagle_i_event['county']
 
+            # Check if the region is present in the processed NOAA events
+            if region not in last_checked_index_per_region:
+                missing_region_warnings[region] += 1
+                if missing_region_warnings[region] % 1000 == 0:
+                    print(f"Warning: No NOAA events found for the region '{region}' {missing_region_warnings[region]} times. Skipping this Eagle I event.")
+                continue
+
+
             match_found = False
             for i in range(last_checked_index_per_region[region], len(noaa_events_processed[region])):
                 noaa_event_start_time, noaa_event_end_time = noaa_events_processed[region][i]
@@ -105,7 +116,6 @@ class EagleIEvent(DataSource):
 
                 if noaa_event_start_time <= eagle_i_time <= noaa_event_end_time:
                     filtered_events.append(eagle_i_event)  # Match found
-                    #print(f"Match found: Eagle I event in {region} on {eagle_i_time} matches NOAA event between {noaa_event_start_time} and {noaa_event_end_time}.")
                     match_found = True
                     break  # Move to next Eagle I event
 
