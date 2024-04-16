@@ -101,7 +101,7 @@ class EagleIEvent(DataSource):
             # Check if the region is present in the processed NOAA events
             if region not in last_checked_index_per_region:
                 missing_region_warnings[region] += 1
-                if missing_region_warnings[region] % 1000 == 0:
+                if missing_region_warnings[region] % 10000 == 0:
                     print(f"Warning: No NOAA events found for the region '{region}' {missing_region_warnings[region]} times. Skipping this Eagle I event.")
                 continue
 

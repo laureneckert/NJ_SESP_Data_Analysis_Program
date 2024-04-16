@@ -76,7 +76,7 @@ def redirect_stdout_to_file(file_path):
         yield
         sys.stdout = original_stdout  # Reset stdout back to original
 
-def save_natural_hazards_to_pickle(hazards):
+def save_natural_hazards_to_pickles(hazards):
     for hazard in hazards:
         try:
             pickle_path = njsesp_config.get_pickle_path(hazard.type_of_hazard)

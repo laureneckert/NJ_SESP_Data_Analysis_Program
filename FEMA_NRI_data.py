@@ -7,6 +7,25 @@ from DataSource import DataSource
 import pandas as pd
 
 class FEMA_NRI_data(DataSource):
+    # Mapping of hazard types to their FEMA NRI data prefixes
+    hazard_to_fema_prefix = {
+        'hurricanes': ['HRCN'],               # Hurricane
+        'earthquakes': ['ERQK'],              # Earthquake
+        'flooding': ['RFLD', 'CFLD'],        # Flooding (Riverine Flooding, Coastal Flooding)
+        'avalanches': ['AVLN'],               # Avalanche
+        'drought': ['DRGT'],                 # Drought
+        'hail': ['HAIL'],                    # Hail
+        'heat_waves': ['HWAV'],               # Heat Wave
+        'landslides': ['LNDS'],               # Landslide
+        'lightning': ['LTNG'],               # Lightning
+        'strong_winds': ['SWND'],             # Strong Wind
+        'tornados': ['TRND'],                 # Tornado
+        'tsunamis': ['TSUN'],                 # Tsunami
+        'volcanic_activity': ['VLCN'],       # Volcanic Activity
+        'wildfires': ['WFIR'],                # Wildfire
+        'winter_storms': ['CWAV', 'ISTM', 'WNTW'],  # Winter Storms (Cold Wave, Ice Storm, Winter Weather) #three prefixes might cause a bug - need to verify when doing winter storms
+    }
+    
     def __init__(self, data):
         super().__init__()  # Initialize parent DataSource class
         attributes = [
@@ -362,25 +381,6 @@ class FEMA_NRI_data(DataSource):
                 print(f"No FEMA data mapping found for {hazard_type} hazard. Skipping...")
 
         print("Completed assignment of FEMA NRI data to hazards.")
-
-    # Mapping of hazard types to their FEMA NRI data prefixes
-    hazard_to_fema_prefix = {
-        'hurricanes': ['HRCN'],               # Hurricane
-        'earthquakes': ['ERQK'],              # Earthquake
-        'flooding': ['RFLD', 'CFLD'],        # Flooding (Riverine Flooding, Coastal Flooding)
-        'avalanches': ['AVLN'],               # Avalanche
-        'drought': ['DRGT'],                 # Drought
-        'hail': ['HAIL'],                    # Hail
-        'heat_waves': ['HWAV'],               # Heat Wave
-        'landslides': ['LNDS'],               # Landslide
-        'lightning': ['LTNG'],               # Lightning
-        'strong_winds': ['SWND'],             # Strong Wind
-        'tornados': ['TRND'],                 # Tornado
-        'tsunamis': ['TSUN'],                 # Tsunami
-        'volcanic_activity': ['VLCN'],       # Volcanic Activity
-        'wildfires': ['WFIR'],                # Wildfire
-        'winter_storms': ['CWAV', 'ISTM', 'WNTW'],  # Winter Storms (Cold Wave, Ice Storm, Winter Weather) #three prefixes might cause a bug - need to verify when doing winter storms
-    }
 
     def print_data_source_samples(self, sample_size=5):
         """

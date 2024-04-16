@@ -27,29 +27,29 @@ from storm_system import StormSystem
 
 driver_config_flags = {
 
-    "force_recreate_noaa_hurricanes_events": True,
-    "force_recreate_noaa_lightning_events": True,
-    "force_recreate_noaa_winter_storms_events": True,
-    "force_recreate_noaa_tornados_events": True,
-    "force_recreate_noaa_wildfires_events": True,
-    "force_recreate_noaa_flooding_events": True,
-    "force_recreate_noaa_hail_events": True,
-    "force_recreate_noaa_strong_winds_events": True,
+    "force_recreate_noaa_hurricanes_events": False,
+    "force_recreate_noaa_lightning_events": False,
+    "force_recreate_noaa_winter_storms_events": False,
+    "force_recreate_noaa_tornados_events": False,
+    "force_recreate_noaa_wildfires_events": False,
+    "force_recreate_noaa_flooding_events": False,
+    "force_recreate_noaa_hail_events": False,
+    "force_recreate_noaa_strong_winds_events": False,
 
-    "force_recreate_eagle_i_events": True,
-    "force_recreate_fema_nri_data": True,
+    "force_recreate_eagle_i_events": False,
+    "force_recreate_fema_nri_data": False,
     
-    "force_recreate_storm_systems": True,
-    "force_recreate_lightning" : True,
-    "force_recreate_hurricanes": True,
-    "force_recreate_winter_storms" : True,
-    "force_recreate_tornados" : True,
-    "force_recreate_wildfires" : True,
-    "force_recreate_flooding" : True,
-    "force_recreate_hail" : True,
-    "force_recreate_strong_winds" : True,
+    "force_recreate_storm_systems": False,
+    "force_recreate_lightning" : False,
+    "force_recreate_hurricanes": False,
+    "force_recreate_winter_storms" : False,
+    "force_recreate_tornados" : False,
+    "force_recreate_wildfires" : False,
+    "force_recreate_flooding" : False,
+    "force_recreate_hail" : False,
+    "force_recreate_strong_winds" : False,
 
-    "sort_and_assign_data" : True
+    "sort_and_assign_data" : False
 }
 
 def check_for_pickles():
@@ -171,13 +171,15 @@ def load_data():
 
     return noaa_hurricane_events, noaa_lightning_events, noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, noaa_hail_events, noaa_strong_wind_events, eagle_i_events, fema_nri_data
 
-def load_hurricane_related_stuff():
+def load_hazards():
+    #Hurricane stuff
+    ##Storm Systems
     storm_systems = StormSystem.load_or_create( # Load or create StormSystem objects for hurricane storms
         config['pickle_paths']['storm_systems'],
         config['data_paths']['hurricanes']['storm_systems_file'],
         force_recreate=driver_config_flags["force_recreate_storm_systems"]
     )
-    #Load or create hazard objects with default values
+    ##Hurricanes
     hurricanes = NaturalHazard.load_or_create(config['pickle_paths']['hurricanes'], Hurricane, force_recreate=driver_config_flags["force_recreate_hurricanes"])
     update_hurricanes_storm_systems_flag = driver_config_flags["force_recreate_hurricanes"] # Do you want to link the storm systems to the hurricanes hazard and then update the hurricanes pickle?
     if update_hurricanes_storm_systems_flag: # Check the flag before proceeding
@@ -193,7 +195,7 @@ def load_hurricane_related_stuff():
     else:
         print("Update Hurricanes flag is set to False. Skipping update.")
 
-    #verification step
+    ##verification step
     print_data_2 = True # Print a summary of hurricane data?
     if print_data_2:
         if hurricanes:
@@ -201,7 +203,47 @@ def load_hurricane_related_stuff():
     else:
         print("Print hurricane data sample flag off. Skipping.")
     
-    return storm_systems, hurricanes
+    #winter storms
+    winter_storms = NaturalHazard.load_or_create(config['pickle_paths']['winter_storms'], WinterStorms, force_recreate=driver_config_flags["force_recreate_winter_storms"])
+    #tornado
+    tornados = NaturalHazard.load_or_create(config['pickle_paths']['tornados'], Tornados, force_recreate=driver_config_flags["force_recreate_tornados"])
+    #wildfire
+    wildfires = NaturalHazard.load_or_create(config['pickle_paths']['wildfires'], Wildfires, force_recreate=driver_config_flags["force_recreate_wildfires"])
+    #flooding
+    flooding = NaturalHazard.load_or_create(config['pickle_paths']['flooding'], Flooding, force_recreate=driver_config_flags["force_recreate_flooding"])
+    #hail
+    hail = NaturalHazard.load_or_create(config['pickle_paths']['hail'], Hail, force_recreate=driver_config_flags["force_recreate_hail"])
+    #strong wind
+    strong_winds = NaturalHazard.load_or_create(config['pickle_paths']['strong_winds'], StrongWinds, force_recreate=driver_config_flags["force_recreate_strong_winds"])
+    #lightning
+    lightning = NaturalHazard.load_or_create(config['pickle_paths']['lightning'], Lightning, force_recreate=driver_config_flags["force_recreate_lightning"])
+    #earthquakes TODO
+
+    # Initialize list of all hazards
+    hazards = [hurricanes, tornados, wildfires, winter_storms, flooding, hail, strong_winds, lightning] # Add other hazards to this list
+    #verification step/previous debugging
+    for hazard in hazards:
+        try:
+            hazard_type = hazard.type_of_hazard
+            print(f"\n{hazard} is a {hazard_type}")
+        except Exception as e:
+            print(f"\n Hazard {hazard} is having an issue with the type of hazard attribute. Issue: {e}")
+            hazard.type_of_hazard = 'test'
+            continue
+        try:
+            hazard_type = hazard.type_of_hazard
+            print(f"\n{hazard} is definitely a {hazard_type}")
+        except Exception as e:
+            print(f"\n Hazard {hazard} is STILLLLL having an issue with the type of hazard attribute. Issue: {e}")
+            continue
+    
+    try:
+        print("Saving all hazard pickles now...")
+        uti.save_natural_hazards_to_pickles(hazards)
+    except Exception as e:
+        print("Error saving all natural hazard pickles. Error: {e}")
+
+    return storm_systems, hurricanes, winter_storms, tornados, wildfires, flooding, hail, strong_winds, lightning, hazards
 
 def sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, noaa_lightning_events,
                           noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, 
@@ -261,7 +303,11 @@ def sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, n
 
         EagleIEvent.assign_eagle_i_events_to_hazards(hazards, eagle_i_events, EagleIEvent.noaa_to_eaglei_mapping) # Filter & Assign Eagle I events to hazards
 
-        #@TODO save hazard objects after sorting
+        try:
+            print("Saving all hazard pickles now...")
+            uti.save_natural_hazards_to_pickles(hazards)
+        except Exception as e:
+            print("Error saving all natural hazard pickles. Error: {e}")
     
     else:
         print("Sorting and assigning data skipped.")
@@ -357,42 +403,7 @@ def main(args=None):
     #Step 2: Load or create data source objects
     noaa_hurricane_events, noaa_lightning_events, noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, noaa_hail_events, noaa_strong_wind_events, eagle_i_events, fema_nri_data = load_data()
     #Step 3: Loading and creating natural hazards NOTE: Each natural hazard has one object for each subclass to store all the relevant variables in, the subclasses represent the entire risk, not individual events of the risk
-    #hurricanes
-    storm_systems, hurricanes = load_hurricane_related_stuff() #Hurricanes
-    #winter storms
-    winter_storms = NaturalHazard.load_or_create(config['pickle_paths']['winter_storms'], WinterStorms, force_recreate=driver_config_flags["force_recreate_winter_storms"])
-    #tornado
-    tornados = NaturalHazard.load_or_create(config['pickle_paths']['tornados'], Tornados, force_recreate=driver_config_flags["force_recreate_tornados"])
-    #wildfire
-    wildfires = NaturalHazard.load_or_create(config['pickle_paths']['wildfires'], Wildfires, force_recreate=driver_config_flags["force_recreate_wildfires"])
-    #flooding
-    flooding = NaturalHazard.load_or_create(config['pickle_paths']['flooding'], Flooding, force_recreate=driver_config_flags["force_recreate_flooding"])
-    #hail
-    hail = NaturalHazard.load_or_create(config['pickle_paths']['hail'], Hail, force_recreate=driver_config_flags["force_recreate_hail"])
-    #strong wind
-    strong_winds = NaturalHazard.load_or_create(config['pickle_paths']['strong_winds'], StrongWinds, force_recreate=driver_config_flags["force_recreate_strong_winds"])
-    #lightning
-    lightning = NaturalHazard.load_or_create(config['pickle_paths']['lightning'], Lightning, force_recreate=driver_config_flags["force_recreate_lightning"])
-    #earthquakes
-
-    # Initialize list of all hazards
-    hazards = [hurricanes, tornados, wildfires, winter_storms, flooding, hail, strong_winds, lightning] # Add other hazards to this list
-    #verification step/previous debugging
-    for hazard in hazards:
-        try:
-            hazard_type = hazard.type_of_hazard
-            print(f"\n{hazard} is a {hazard_type}")
-        except Exception as e:
-            print(f"\n Hazard {hazard} is having an issue with the type of hazard attribute. Issue: {e}")
-            hazard.type_of_hazard = 'test'
-            continue
-        try:
-            hazard_type = hazard.type_of_hazard
-            print(f"\n{hazard} is definitely a {hazard_type}")
-        except Exception as e:
-            print(f"\n Hazard {hazard} is STILLLLL having an issue with the type of hazard attribute. Issue: {e}")
-            continue
-            
+    storm_systems, hurricanes, winter_storms, tornados, wildfires, flooding, hail, strong_winds, lightning, hazards = load_hazards()
 
     #Step 4: Assigning data from NOAA, filtering EagleI then assigning, and assigning FEMA NRI data to relevant hazards
     sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, noaa_lightning_events, 
@@ -406,6 +417,20 @@ def main(args=None):
     #Step 6: Data Analysis
     process_hurricanes(ewma_data, seasonal_baseline, hurricanes, storm_systems)
 
+    for hazard in hazards:
+        if not isinstance(hazard, Hurricane):  # Skip processing for Hurricane objects
+            hazard.process_noaa_events()
+            hazard.print_noaa_window_summary()
+            hazard.calculate_average_eaglei_outage_duration(ewma_data, seasonal_baseline)
+            hazard.calculate_average_peak_outages(eagle_i_events)
+            hazard.calculate_percent_customers_affected()
+            hazard.calculate_property_damage()
+            hazard.calculate_probability()
+
+    print("\nSummary of data for hazards:")
+    for hazard in hazards:
+        hazard.print_basic_info()        
+
 if __name__ == "__main__":
-    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output37.txt"):
+    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output44.txt"):
         main()

@@ -3,6 +3,7 @@
 #Version 2
 
 from abc import ABC, abstractmethod
+from FEMA_NRI_data import FEMA_NRI_data
 from hazard import Hazard
 import utilities as uti
 import os
@@ -26,9 +27,11 @@ class NaturalHazard(Hazard):
         
         self.eaglei_events = []
         self.unique_eaglei_regions = set()
-        self.total_duration_eaglei = 0
+        self.total_duration_eaglei = 0 #idk if i use this
         self.outage_duration_by_county = {}
         
+        #self.outages_above_baseline_duration = 0.0 #total for all threat incidents
+        self.outages_above_baseline_timestamps = []
         self.average_duration_above_baseline = 0.0 #average per threat incident
         #self.outage_duration_by_county = {} #to delete?
         self.timestamps_above_baseline = []
@@ -303,6 +306,66 @@ class NaturalHazard(Hazard):
         print(f"Total duration above baseline: {total_duration_hours} hours")
         return total_duration_hours, timestamps_above
 
+    def calculate_peak_outages_for_window(self, event_window, eaglei_events):
+        # Initialize dictionaries to track peak outages
+        peak_outages_by_county = {}
+        total_peak_outages = 0
+
+        start_time, end_time, _ = event_window
+        print(f"Calculating peak outages for window: {start_time} to {end_time}")
+
+        for event in eaglei_events:
+            event_time = pd.to_datetime(event['run_start_time'])
+            if start_time <= event_time <= end_time:
+                county = event['county']
+                outage = event['sum']
+
+                # Update peak outage for the county
+                if county in peak_outages_by_county:
+                    if outage > peak_outages_by_county[county]:
+                        print(f"New peak outage in {county}: {outage} (Previous: {peak_outages_by_county[county]})")
+                        peak_outages_by_county[county] = outage
+                else:
+                    print(f"Initial peak outage in {county}: {outage}")
+                    peak_outages_by_county[county] = outage
+
+        total_peak_outages = sum(peak_outages_by_county.values())
+        print(f"Total peak outages for this window: {total_peak_outages}")
+
+        # Assign the peak outages to the class attributes
+        self.peak_outages_by_county = peak_outages_by_county
+        self.total_peak_outages = total_peak_outages
+
+        return total_peak_outages
+
+    def calculate_average_peak_outages(self, eaglei_events):
+        total_peak_outages = 0
+        valid_window_count = 0
+        threshold_date = pd.to_datetime("2014-11-01 04:00:00")  # Example threshold date
+        type_of_hazard = self.type_of_hazard
+        print(f"Calculating average peak outages for {type_of_hazard} after {threshold_date}...")
+
+        # Loop through each processed NOAA event window
+        for window in self.processed_noaa_windows:
+            if window[0] > threshold_date:
+                print(f"\nProcessing window {window[0]} to {window[1]}")
+                window_peak_outages = self.calculate_peak_outages_for_window(window, eaglei_events)
+                print(f"Total peak outages for this window (after threshold): {window_peak_outages}")
+                total_peak_outages += window_peak_outages
+                valid_window_count += 1
+
+        # Calculate average peak outages if there are valid windows
+        if valid_window_count > 0:
+            average_peak_outages = total_peak_outages / valid_window_count
+            print(f"\nAverage Peak Outages (after threshold): {average_peak_outages}")
+        else:
+            average_peak_outages = 0  # No valid windows found
+            print("No windows found after the threshold date. Average Peak Outages set to 0.")
+
+        # Update class attributes
+        self.customers_affected_sum = average_peak_outages
+        return average_peak_outages
+
     def calculate_percent_customers_affected(self):
         # Define the total number of customers in the state
         total_customers_in_state = 4170000 #from task 1
@@ -312,77 +375,119 @@ class NaturalHazard(Hazard):
         else:
             self.percent_customers_affected = 0.0
 
-    def calculate_property_damage(self, hazard_prefix):
+    def calculate_property_damage(self):
         """
-        Calculates the total property damage for the hazard, specifically for buildings, 
-        by aggregating data across all counties and multiplying the building exposure 
+        Calculates the total property damage for the hazard by aggregating data across all counties
+        for multiple hazard prefixes associated with the hazard type and multiplying the building exposure 
         by the building loss ratio for each county.
-
-        Parameters:
-        hazard_prefix (str): The prefix used for the specific natural hazard in FEMA data.
 
         Returns:
         float: The total property damage for buildings for the hazard statewide.
         """
-        property_damage = 0.0
+        total_property_damage = 0.0
+        hazard_prefixes = FEMA_NRI_data.hazard_to_fema_prefix.get(self.type_of_hazard, [])
 
-        print(f"\nCalculating property damage for buildings for hazard prefix: {hazard_prefix}...")
+        if not hazard_prefixes:
+            print(f"No FEMA data prefixes are mapped to the hazard type: {self.type_of_hazard}.")
+            return total_property_damage
 
-        if hazard_prefix not in self.NRI_data_fields:
-            print(f"No data available for the hazard prefix: {hazard_prefix}")
-            return property_damage
+        for hazard_prefix in hazard_prefixes:
+            property_damage = 0.0
+            print(f"\nCalculating property damage for buildings for hazard prefix: {hazard_prefix}...")
 
-        for county, data in self.NRI_data_fields[hazard_prefix].items():
-            # Use the specific attributes for buildings: EXPB for exposure and HLRB for loss ratio
-            building_exposure = data.get("EXPB", 0.0)
-            building_loss_ratio = data.get("HLRB", 0.0)
+            if hazard_prefix not in self.NRI_data_fields:
+                print(f"No data available for the hazard prefix: {hazard_prefix}")
+                continue
 
-            # Calculate property damage for buildings in the current county
-            county_property_damage = building_exposure * building_loss_ratio
-            property_damage += county_property_damage
+            for county, data in self.NRI_data_fields[hazard_prefix].items():
+                building_exposure = data.get("EXPB", 0.0)
+                building_loss_ratio = data.get("HLRB", 0.0)
+                county_property_damage = building_exposure * building_loss_ratio
+                property_damage += county_property_damage
+                print(f"County: {county}, Building Exposure: {building_exposure}, Building Loss Ratio: {building_loss_ratio}, Incremental Damage: {county_property_damage}")
 
-            print(f"County: {county}, Building Exposure: {building_exposure}, Building Loss Ratio: {building_loss_ratio}, Incremental Damage: {county_property_damage}")
+            print(f"Total property damage for buildings calculated for {hazard_prefix}: {property_damage}")
+            total_property_damage += property_damage
 
-        self.total_property_damage = property_damage
-        print(f"Total property damage for buildings calculated for {hazard_prefix}: {property_damage}")
-        return property_damage
+        self.total_property_damage = total_property_damage
+        print(f"\nAggregate Total property damage for all related prefixes: {total_property_damage}")
+        return total_property_damage
 
-
-    def calculate_probability(self, hazard_prefix):
+    def calculate_probability(self):
         """
-        Calculates the annualized frequency (probability) of the hazard by averaging
-        the annualized frequency of each county. Includes print statements to show calculation progress.
-
-        Parameters:
-        hazard_prefix (str): The prefix used for the specific natural hazard in FEMA data.
+        Calculates the average annualized frequency (probability) of the hazard by averaging
+        the annualized frequencies from multiple data prefixes that are associated with the hazard.
+        This includes all counties under each prefix.
 
         Returns:
-        float: The average annualized frequency of the hazard across all counties.
+        float: The average annualized frequency of the hazard across all relevant counties and prefixes.
         """
         total_frequency = 0.0
-        count = 0
+        total_count = 0
+        hazard_prefixes = FEMA_NRI_data.hazard_to_fema_prefix.get(self.type_of_hazard, [])
 
-        if hazard_prefix not in self.NRI_data_fields:
-            print(f"No data available for the hazard prefix: {hazard_prefix}")
+        if not hazard_prefixes:
+            print(f"No FEMA data prefixes are mapped to the hazard type: {self.type_of_hazard}.")
             return 0.0
 
-        print(f"Starting frequency calculation for hazard prefix: {hazard_prefix}")
-        for county, data in self.NRI_data_fields[hazard_prefix].items():
-            if "AFREQ" in data:
-                frequency = data["AFREQ"]
-                total_frequency += frequency
-                count += 1
-                print(f"County: {county}, Frequency: {frequency}")
+        for hazard_prefix in hazard_prefixes:
+            prefix_frequency = 0.0
+            count = 0
 
-        average_frequency = total_frequency / count if count > 0 else 0.0
-        self.historical_frequency=average_frequency
-        print(f"Calculated average frequency for {hazard_prefix}: {average_frequency} (based on {count} counties)")
+            print(f"Starting frequency calculation for hazard prefix: {hazard_prefix}")
+            if hazard_prefix not in self.NRI_data_fields:
+                print(f"No data available for the hazard prefix: {hazard_prefix}")
+                continue
+
+            for county, data in self.NRI_data_fields[hazard_prefix].items():
+                if "AFREQ" in data:
+                    frequency = data["AFREQ"]
+                    prefix_frequency += frequency
+                    count += 1
+                    print(f"County: {county}, Frequency: {frequency}")
+
+            if count > 0:
+                average_prefix_frequency = prefix_frequency / count
+                total_frequency += average_prefix_frequency
+                total_count += 1
+                print(f"Calculated average frequency for {hazard_prefix}: {average_prefix_frequency} (based on {count} counties)")
+            else:
+                print(f"No frequency data available for prefix: {hazard_prefix}")
+
+        average_frequency = total_frequency / total_count if total_count > 0 else 0.0
+        self.historical_frequency = average_frequency
+        print(f"\nOverall average annualized frequency for {self.type_of_hazard}: {average_frequency} (across {total_count} prefixes)")
         return average_frequency
 
-    def calculate_average_eaglei_outage_duration(self):
-        #placeholder for the implementation of the general case
-        #hurricanes has its own implementation
-        pass
+    def calculate_average_eaglei_outage_duration(self, ewma_data, seasonal_baseline):
+        print(f"Starting calculation of average Eagle I outage duration above baseline for {self.type_of_hazard}.")
+        threshold_date = pd.to_datetime("2014-11-01 04:00:00")  # Placeholder date; adjust as needed
+
+        # Filter windows that are after the threshold date
+        relevant_windows = [(window[0], window[1]) for window in self.processed_noaa_windows if window[0] > threshold_date]
+        print(f"Filtered {len(relevant_windows)} NOAA windows after threshold date for processing.")
+
+        # Calculate duration above baseline for all relevant windows in one go
+        if relevant_windows:
+            total_duration, all_timestamps_above = self.calculate_duration_above_baseline_for_windows(
+                relevant_windows, ewma_data, seasonal_baseline)
+            count = len(relevant_windows)  # Number of windows considered
+            average_duration = total_duration / count if count else 0.0
+        else:
+            total_duration, all_timestamps_above = 0.0, []
+            average_duration = 0.0
+            print("\nNo relevant NOAA windows found after the threshold date. Setting average duration to 0.")
+
+        # Assign calculated values to the instance attributes
+        #self.outages_above_baseline_duration = total_duration  # Total duration above baseline across all relevant events
+        self.outages_above_baseline_timestamps = all_timestamps_above  # Timestamps for periods above baseline
+        
+        self.average_duration_above_baseline = average_duration  # Attribute for average duration
+        self.total_time_duration_customer_affected = total_duration  # Total duration across all events
+        self.avg_time_duration_customer_affected = average_duration  # Average duration per event
+
+        print(f"\nAverage Eagle I Outage Duration Above Baseline for {self.type_of_hazard} (after threshold date): {average_duration} hours")
+        return average_duration
 
     def print_nri_data_structure(self):
         print("Inspecting NRI_data_fields structure...")
