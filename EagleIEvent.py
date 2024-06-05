@@ -55,7 +55,7 @@ class EagleIEvent(DataSource):
                         'fips_code': row['fips_code'],
                         'county': row['county'],
                         'state': row['state'],
-                        'sum': row['sum'],
+                        'sum': row['sum'] if pd.notna(row['sum']) else 0,
                         'run_start_time': row['run_start_time']
                     }
                     events.append(event)

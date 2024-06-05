@@ -12,6 +12,7 @@ from DataSource import DataSource
 from EagleIEvent import EagleIEvent
 from NOAAEvent import NOAAEvent
 from FEMA_NRI_data import FEMA_NRI_data
+from USGSEvent import USGSEvent
 
 from hazard import Hazard
 from natural_hazard import NaturalHazard
@@ -24,6 +25,7 @@ from flooding import Flooding
 from hail import Hail
 from strong_wind import StrongWinds
 from storm_system import StormSystem
+from earthquakes import Earthquakes
 
 driver_config_flags = {
 
@@ -35,9 +37,11 @@ driver_config_flags = {
     "force_recreate_noaa_flooding_events": False,
     "force_recreate_noaa_hail_events": False,
     "force_recreate_noaa_strong_winds_events": False,
-
+    "force_recreate_usgs_earthquake_events" : False,
+    
     "force_recreate_eagle_i_events": False,
     "force_recreate_fema_nri_data": False,
+    "force_recreate_usgs_data" : False,
     
     "force_recreate_storm_systems": False,
     "force_recreate_lightning" : False,
@@ -48,8 +52,9 @@ driver_config_flags = {
     "force_recreate_flooding" : False,
     "force_recreate_hail" : False,
     "force_recreate_strong_winds" : False,
+    "force_recreate_earthquakes" : False,
 
-    "sort_and_assign_data" : False
+    "sort_and_assign_data" : True
 }
 
 def check_for_pickles():
@@ -125,7 +130,14 @@ def load_data():
         config['data_paths']['fema_nri']['file_path'],
         FEMA_NRI_data,
         force_recreate=driver_config_flags["force_recreate_fema_nri_data"]
-    )    
+    )
+    usgs_data = DataSource.load_or_create( #Load or create USGS data
+        config['pickle_paths']['usgs'],
+        config['data_paths']['usgs']['file_path'],
+        USGSEvent,
+        force_recreate=driver_config_flags["force_recreate_usgs_data"]
+        )
+        
     #verification step
     print_data = True # Print data source samples?
     if print_data:
@@ -166,10 +178,12 @@ def load_data():
             EagleIEvent.print_samples(eagle_i_events, 30)
         if fema_nri_data:
             FEMA_NRI_data.print_samples(fema_nri_data, 5)
+        if usgs_data:
+            USGSEvent.print_samples(usgs_data, 5)
     else:
         print("Print NOAA, Ealge I, FEMA data sample flag off. Skipping.")
 
-    return noaa_hurricane_events, noaa_lightning_events, noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, noaa_hail_events, noaa_strong_wind_events, eagle_i_events, fema_nri_data
+    return noaa_hurricane_events, noaa_lightning_events, noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, noaa_hail_events, noaa_strong_wind_events, eagle_i_events, fema_nri_data, usgs_data
 
 def load_hazards():
     #Hurricane stuff
@@ -193,7 +207,7 @@ def load_hazards():
         uti.save_to_pickle(hurricanes, config['pickle_paths']['hurricanes'])    # Save the updated Hurricanes object
         print("Hurricanes data successfully updated and saved.")
     else:
-        print("Update Hurricanes flag is set to False. Skipping update.")
+        print("Update Hurricanes flag is set to True. Skipping update.")
 
     ##verification step
     print_data_2 = True # Print a summary of hurricane data?
@@ -218,9 +232,10 @@ def load_hazards():
     #lightning
     lightning = NaturalHazard.load_or_create(config['pickle_paths']['lightning'], Lightning, force_recreate=driver_config_flags["force_recreate_lightning"])
     #earthquakes TODO
+    earthquakes = NaturalHazard.load_or_create(config['pickle_paths']['earthquakes'], Earthquakes, force_recreate=driver_config_flags['force_recreate_earthquakes'])
 
     # Initialize list of all hazards
-    hazards = [hurricanes, tornados, wildfires, winter_storms, flooding, hail, strong_winds, lightning] # Add other hazards to this list
+    hazards = [hurricanes, tornados, wildfires, winter_storms, flooding, hail, strong_winds, lightning, earthquakes] # Add other hazards to this list
     #verification step/previous debugging
     for hazard in hazards:
         try:
@@ -243,12 +258,12 @@ def load_hazards():
     except Exception as e:
         print("Error saving all natural hazard pickles. Error: {e}")
 
-    return storm_systems, hurricanes, winter_storms, tornados, wildfires, flooding, hail, strong_winds, lightning, hazards
+    return storm_systems, hurricanes, winter_storms, tornados, wildfires, flooding, hail, strong_winds, lightning, earthquakes, hazards
 
 def sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, noaa_lightning_events,
                           noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, 
                           noaa_hail_events, noaa_strong_wind_events, hurricanes, lightning, winter_storms, flooding,
-                          tornados, wildfires, hail, strong_winds, hazards):
+                          tornados, wildfires, hail, strong_winds, earthquakes, hazards):
     #Define the mapping of NOAA event groups to hazards
     noaa_event_groups = {
         'Hurricane': {
@@ -299,9 +314,10 @@ def sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, n
 
         FEMA_NRI_data.assign_data_to_hazard(hazards, fema_nri_data, FEMA_NRI_data.hazard_to_fema_prefix)
         
-        NOAAEvent.assign_and_link_noaa_events_to_hazard(noaa_event_groups) # assign and link NOAA events to hazards
-
-        EagleIEvent.assign_eagle_i_events_to_hazards(hazards, eagle_i_events, EagleIEvent.noaa_to_eaglei_mapping) # Filter & Assign Eagle I events to hazards
+        for hazard in hazards:
+            if not isinstance(hazard, Earthquakes):  # Skip processing for earthquake objects cause they use different data sources
+                NOAAEvent.assign_and_link_noaa_events_to_hazard(noaa_event_groups) # assign and link NOAA events to hazards
+                EagleIEvent.assign_eagle_i_events_to_hazards(hazards, eagle_i_events, EagleIEvent.noaa_to_eaglei_mapping) # Filter & Assign Eagle I events to hazards
 
         try:
             print("Saving all hazard pickles now...")
@@ -346,7 +362,7 @@ def process_hurricanes(ewma_data, seasonal_baseline, hurricanes, storm_systems):
         hurricanes.link_unlinked_noaa_windows()
     else:
         print("No unlinked NOAA event windows to process.")
-    hurricanes.identify_unlinked_noaa_windows(return_unlinked=False)
+    hurricanes.identify_unlinked_noaa_windows(return_unlinked=True)
     hurricanes.print_noaa_window_summary()
     print("-------------------------------------------------")
     print("\nVerifying linked NOAA event windows for each storm system:")
@@ -378,11 +394,12 @@ def process_hurricanes(ewma_data, seasonal_baseline, hurricanes, storm_systems):
     # After processing all storm systems, calculate the average duration for the hurricanes hazard
     hurricanes.calculate_average_eaglei_outage_duration()
     #print(f"Average duration per hurricane storm system of Eagle I outages above baseline: {hurricanes.average_duration_above_baseline}")
-    hurricanes.calculate_average_peak_outages()
-    hurricanes.calculate_percent_customers_affected()
+    #hurricanes.calculate_average_peak_outages()
+    #hurricanes.calculate_percent_customers_affected()
     hurricanes.calculate_regression_coefficients()
     hurricanes.calculate_future_impact_coefficient()
-    hurricanes.analyze_hurricane_data()
+    hurricanes.calculate_property_damage()
+    hurricanes.calculate_probability()
     hurricanes.print_basic_info()
     
     #Save results
@@ -400,37 +417,60 @@ def main(args=None):
     check_for_pickles()
     #Clean Data
     #NOAAEvent.clean_noaa_data() #not working, just did it manually
+    #manually cleaned usgs data
     #Step 2: Load or create data source objects
-    noaa_hurricane_events, noaa_lightning_events, noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, noaa_hail_events, noaa_strong_wind_events, eagle_i_events, fema_nri_data = load_data()
+    noaa_hurricane_events, noaa_lightning_events, noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, noaa_hail_events, noaa_strong_wind_events, eagle_i_events, fema_nri_data, usgs_data = load_data()
     #Step 3: Loading and creating natural hazards NOTE: Each natural hazard has one object for each subclass to store all the relevant variables in, the subclasses represent the entire risk, not individual events of the risk
-    storm_systems, hurricanes, winter_storms, tornados, wildfires, flooding, hail, strong_winds, lightning, hazards = load_hazards()
+    storm_systems, hurricanes, winter_storms, tornados, wildfires, flooding, hail, strong_winds, lightning, earthquakes, hazards = load_hazards()
 
     #Step 4: Assigning data from NOAA, filtering EagleI then assigning, and assigning FEMA NRI data to relevant hazards
     sort_and_assign_data(eagle_i_events, fema_nri_data, noaa_hurricane_events, noaa_lightning_events, 
                          noaa_winter_storms_events, noaa_flooding_events, noaa_tornado_events, noaa_wildfire_events, 
                          noaa_hail_events, noaa_strong_wind_events, hurricanes, lightning, winter_storms, flooding, 
-                         tornados, wildfires, hail, strong_winds, hazards)
+                         tornados, wildfires, hail, strong_winds, earthquakes, hazards)
 
     #Step 5: Data processing for natural hazards - calculating EWMA, seasonal baseline, plotting results
     ewma_data, seasonal_baseline = data_processing_for_eaglei(eagle_i_events, noaa_hurricane_events, storm_systems)
 
     #Step 6: Data Analysis
-    process_hurricanes(ewma_data, seasonal_baseline, hurricanes, storm_systems)
+    #process_hurricanes(ewma_data, seasonal_baseline, hurricanes, storm_systems)
 
     for hazard in hazards:
-        if not isinstance(hazard, Hurricane):  # Skip processing for Hurricane objects
-            hazard.process_noaa_events()
+        if not isinstance(hazard, Hurricane | Earthquakes):  # Skip processing for Hurricane objects
+            print(f"---------------------------------")
+            #hazard.process_noaa_events()
             hazard.print_noaa_window_summary()
-            hazard.calculate_average_eaglei_outage_duration(ewma_data, seasonal_baseline)
-            hazard.calculate_average_peak_outages(eagle_i_events)
-            hazard.calculate_percent_customers_affected()
+            print(f"---------------------------------")
+            #hazard.calculate_average_eaglei_outage_duration(ewma_data, seasonal_baseline)
+            #print(f"---------------------------------")
+            #hazard.calculate_average_peak_outages(eagle_i_events)
+            #hazard.calculate_percent_customers_affected()
+            print(f"---------------------------------")
             hazard.calculate_property_damage()
             hazard.calculate_probability()
+            #calc intensity coefficient
+            #calc freq coefficient
+            #calc FI coefficient
+        if isinstance(hazard, Earthquakes):
+            print("future processinging for earthquakes")
+            #process usgs events - clean datetimes, pad times so they have an end datetime, find window overlaps similar to NOAA
+            #print usgs window summary
+            #calculate average eagle i outage duration - using usgs windows instead of noaa windows
+            #calculate percent customers affected
+            #calculate prop damage
+            #calculate probability
+            hazard.calculate_property_damage()
+            hazard.calculate_probability()
+            #calc intensity coefficient
+            #calc freq coefficient
+            #calc FI coefficient
 
     print("\nSummary of data for hazards:")
     for hazard in hazards:
         hazard.print_basic_info()        
+    
+    uti.save_natural_hazards_to_pickles(hazards)
 
 if __name__ == "__main__":
-    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output44.txt"):
+    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output50.txt"):
         main()

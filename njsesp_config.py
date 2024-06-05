@@ -26,6 +26,9 @@ config = {
         },
         'fema_nri': {
             'file_path': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\NRI_Table_Counties_NewJersey\NRI_Table_Counties_NewJersey.csv",
+        },
+        'usgs' : {
+            'file_path' : r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\other_natural_hazard_info\usgs_nj_earthquakes_2014_2022.csv"
         }
     },
     'directories': {
@@ -34,7 +37,7 @@ config = {
         'outages_by_storm_system_plot_directory': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\outages visualizations\by storm",    
     },
     'pickle_paths': {
-        #data sources - other
+        #data sources - noaa
         'noaa_hurri': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\hurricane_noaa_events.pkl",
         'noaa_lightning' : r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\lightning_noaa_events.pkl",
         'noaa_winter_storms' : r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\winter_storms_noaa_events.pkl",
@@ -46,7 +49,8 @@ config = {
         #data sources - other
         'eagle_i': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\eagle_i_events.pkl",
         'fema_nri': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\FEMA_NRI_data.pkl",
-        
+        'usgs' : r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\usgs_data.pkl",
+
         #objects
         'hurricanes': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\hurricane_objects.pkl",
         'storm_systems': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\storm_systems_objects.pkl",
@@ -56,7 +60,8 @@ config = {
         'wildfires' : r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\wildfires_objects.pkl",
         'flooding' : r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\flooding_objects.pkl",
         'hail' : r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\hail_objects.pkl",
-        'strong_winds': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\strong_wind_objects.pkl"
+        'strong_winds': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\strong_wind_objects.pkl",
+        'earthquakes': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles\earthquakes_objects.pkl"
     }
 }
 

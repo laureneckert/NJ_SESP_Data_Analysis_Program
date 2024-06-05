@@ -50,12 +50,14 @@ class NaturalHazard(Hazard):
     def print_basic_info(self):
         # Default implementation for natural hazards
         # Print the specified information about the natural hazard
+        print(f"---------------------------------")
         print(f"Natural Hazard: {self.type_of_hazard}")
         print(f"Percent Customers Affected: {self.percent_customers_affected}%")
         print(f"Total Property Damage: ${self.total_property_damage:,.2f}")
         print(f"Average Time Duration Customers Affected: {self.avg_time_duration_customer_affected} hours")
         print(f"Historical Frequency: {self.historical_frequency}")
         print(f"Future Impact Coefficient: {self.future_impact_coefficient}")
+        print(f"---------------------------------")
 
     def add_noaa_event(self, noaa_event):
         """
@@ -510,6 +512,18 @@ class NaturalHazard(Hazard):
                 break  # Remove this if you want to print all hazard prefixes
         else:
             print("NRI_data_fields does not exist or is not a dictionary.")
+
+    def calculate_frequency_coefficient():
+        #linear regression of processed noaa window start dates over time
+        pass
+
+    def get_years_and_intensities(self):
+        #should be implemented in the subclasses
+        pass
+
+    def calculate_intensity_coefficient():
+        #linear regression of intensity over time
+        pass
 
     def calculate_future_impact_coefficient(self):
         """

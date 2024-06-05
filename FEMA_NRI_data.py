@@ -283,7 +283,8 @@ class FEMA_NRI_data(DataSource):
             print(f"Successfully read FEMA NRI file: {file_path}")
 
             for index, row in df.iterrows():
-                data = {attr: row.get(attr, None) for attr in FEMA_NRI_data.get_attributes()}
+                # Create a dictionary for each row, setting NaN values to 0
+                data = {attr: (0 if pd.isna(row[attr]) else row[attr]) for attr in FEMA_NRI_data.get_attributes()}
                 fema_entry = FEMA_NRI_data(data)
                 fema_nri_entries.append(fema_entry)
 
@@ -293,6 +294,7 @@ class FEMA_NRI_data(DataSource):
 
         print(f"Extracted {len(fema_nri_entries)} FEMA NRI entries from {file_path}")
         return fema_nri_entries
+
 
     @staticmethod
     def print_samples(fema_nri_data_list, sample_size=5):
