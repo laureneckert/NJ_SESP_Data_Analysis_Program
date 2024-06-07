@@ -401,6 +401,8 @@ class EagleIEvent(DataSource):
             For quarterly, 8760.
             For monthly, 2920.
 
+            For 1-min data, monthly is 43,800.
+
         Returns:
         pd.Series: Seasonal baseline extracted from seasonal decomposition.
         """
@@ -448,6 +450,36 @@ class EagleIEvent(DataSource):
 
         return capped_ewma, cap_value
     
+    def process_and_align_data(ewma, seasonal_baseline, resample_frequency='1T', interpolation_method='polynomial', polynomial_order=2):
+        """
+        Resamples and aligns EWMA and seasonal baseline data to the same frequency using interpolation.
+
+        Parameters:
+        ewma (pd.Series): Exponentially Weighted Moving Average data.
+        seasonal_baseline (pd.Series): Seasonal baseline data.
+        resample_frequency (str): Frequency to resample data, e.g., '1T' for every minute.
+        interpolation_method (str): Interpolation method, e.g., 'polynomial'.
+        polynomial_order (int): Order of the polynomial used for interpolation, if applicable.
+
+        Returns:
+        tuple of pd.Series: Resampled and interpolated EWMA and seasonal baseline.
+        """
+        print("Resampling and interpolating EWMA and seasonal baseline data...")
+
+        # Resample EWMA data
+        ewma_resampled = ewma.resample(resample_frequency).first()
+        ewma_resampled = ewma_resampled.interpolate(method=interpolation_method, order=polynomial_order)
+        ewma_resampled = ewma_resampled.ffill().bfill()
+
+        # Resample seasonal baseline data
+        seasonal_resampled = seasonal_baseline.resample(resample_frequency).first()
+        seasonal_resampled = seasonal_resampled.interpolate(method=interpolation_method, order=polynomial_order)
+        seasonal_resampled = seasonal_resampled.ffill().bfill()
+
+        print("Resampling and interpolation completed for both data sets.")
+        return ewma_resampled, seasonal_resampled
+
+
     @staticmethod
     def print_df_sample_data(data, sample_size=100):
         """

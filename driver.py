@@ -43,16 +43,16 @@ driver_config_flags = {
     "force_recreate_fema_nri_data": False,
     "force_recreate_usgs_data" : False,
     
-    "force_recreate_storm_systems": False,
-    "force_recreate_lightning" : False,
-    "force_recreate_hurricanes": False,
-    "force_recreate_winter_storms" : False,
-    "force_recreate_tornados" : False,
-    "force_recreate_wildfires" : False,
-    "force_recreate_flooding" : False,
-    "force_recreate_hail" : False,
-    "force_recreate_strong_winds" : False,
-    "force_recreate_earthquakes" : False,
+    "force_recreate_storm_systems": True,
+    "force_recreate_lightning" : True,
+    "force_recreate_hurricanes": True,
+    "force_recreate_winter_storms" : True,
+    "force_recreate_tornados" : True,
+    "force_recreate_wildfires" : True,
+    "force_recreate_flooding" : True,
+    "force_recreate_hail" : True,
+    "force_recreate_strong_winds" : True,
+    "force_recreate_earthquakes" : True,
 
     "sort_and_assign_data" : True
 }
@@ -342,6 +342,7 @@ def data_processing_for_eaglei(eagle_i_events, noaa_hurricane_events, storm_syst
     # Now apply seasonal decomposition to capped EWMA data to get the seasonal baseline
     seasonal_baseline = EagleIEvent.calculate_seasonal_baseline(capped_ewma)
 
+    resampled_ewma, resampled_seasonal_baseline = EagleIEvent.process_and_align_data(ewma_data, seasonal_baseline)
     # Printing samples of the calculated data
     #EagleIEvent.print_df_sample_data(ewma_data, sample_size=50)
     #EagleIEvent.print_df_sample_data(seasonal_baseline, sample_size=80)# Call the method with flags set to your preference
@@ -350,7 +351,7 @@ def data_processing_for_eaglei(eagle_i_events, noaa_hurricane_events, storm_syst
     #EagleIEvent.plot_outages_over_time_per_year(eagle_i_events, ewma_data, seasonal_baseline, noaa_hurricane_events, storm_systems, cap_value, show_noaa_events=True, show_storm_systems=True)
     #EagleIEvent.plot_zoomed_outages_around_storms(eagle_i_events, ewma_data, seasonal_baseline, noaa_hurricane_events, storm_systems, cap_value)
 
-    return ewma_data, seasonal_baseline
+    return resampled_ewma, resampled_seasonal_baseline, cap_value
 
 def process_hurricanes(ewma_data, seasonal_baseline, hurricanes, storm_systems):
     hurricanes.process_noaa_events()
@@ -394,8 +395,8 @@ def process_hurricanes(ewma_data, seasonal_baseline, hurricanes, storm_systems):
     # After processing all storm systems, calculate the average duration for the hurricanes hazard
     hurricanes.calculate_average_eaglei_outage_duration()
     #print(f"Average duration per hurricane storm system of Eagle I outages above baseline: {hurricanes.average_duration_above_baseline}")
-    #hurricanes.calculate_average_peak_outages()
-    #hurricanes.calculate_percent_customers_affected()
+    hurricanes.calculate_average_peak_outages()
+    hurricanes.calculate_percent_customers_affected()
     hurricanes.calculate_regression_coefficients()
     hurricanes.calculate_future_impact_coefficient()
     hurricanes.calculate_property_damage()
@@ -430,40 +431,42 @@ def main(args=None):
                          tornados, wildfires, hail, strong_winds, earthquakes, hazards)
 
     #Step 5: Data processing for natural hazards - calculating EWMA, seasonal baseline, plotting results
-    ewma_data, seasonal_baseline = data_processing_for_eaglei(eagle_i_events, noaa_hurricane_events, storm_systems)
+    ewma_data, seasonal_baseline, cap_value = data_processing_for_eaglei(eagle_i_events, noaa_hurricane_events, storm_systems)
 
     #Step 6: Data Analysis
-    #process_hurricanes(ewma_data, seasonal_baseline, hurricanes, storm_systems)
+    process_hurricanes(ewma_data, seasonal_baseline, hurricanes, storm_systems)
 
     for hazard in hazards:
         if not isinstance(hazard, Hurricane | Earthquakes):  # Skip processing for Hurricane objects
             print(f"---------------------------------")
-            #hazard.process_noaa_events()
+            hazard.process_noaa_events()
             hazard.print_noaa_window_summary()
             print(f"---------------------------------")
-            #hazard.calculate_average_eaglei_outage_duration(ewma_data, seasonal_baseline)
+            hazard.calculate_average_eaglei_outage_duration(ewma_data, seasonal_baseline)
             #print(f"---------------------------------")
-            #hazard.calculate_average_peak_outages(eagle_i_events)
-            #hazard.calculate_percent_customers_affected()
+            hazard.calculate_average_peak_outages(eagle_i_events)
+            hazard.calculate_percent_customers_affected()
             print(f"---------------------------------")
             hazard.calculate_property_damage()
             hazard.calculate_probability()
             #calc intensity coefficient
             #calc freq coefficient
+            hazard.calculate_frequency_coefficient()
             #calc FI coefficient
         if isinstance(hazard, Earthquakes):
             print("future processinging for earthquakes")
-            #process usgs events - clean datetimes, pad times so they have an end datetime, find window overlaps similar to NOAA
-            #print usgs window summary
-            #calculate average eagle i outage duration - using usgs windows instead of noaa windows
-            #calculate percent customers affected
-            #calculate prop damage
-            #calculate probability
+            #process usgs events - converting to datetimes & padding start times w/ 15 min
+            USGSEvent.process_event_times(usgs_data)
+            hazard.calculate_average_eaglei_outage_duration(ewma_data, seasonal_baseline, usgs_data) #using usgs windows instead of noaa windows
+            hazard.calculate_average_peak_outages(eagle_i_events) #calculate percent customers affected
+            hazard.calculate_percent_customers_affected()
             hazard.calculate_property_damage()
             hazard.calculate_probability()
             #calc intensity coefficient
-            #calc freq coefficient
-            #calc FI coefficient
+            #calc freq coefficient - is this just 1?
+            #calc FI coefficient            
+            NaturalHazard.plot_zoomed_outages_around_events(hazard, eagle_i_events, ewma_data, seasonal_baseline, cap_value, usgs_data)
+
 
     print("\nSummary of data for hazards:")
     for hazard in hazards:
@@ -472,5 +475,5 @@ def main(args=None):
     uti.save_natural_hazards_to_pickles(hazards)
 
 if __name__ == "__main__":
-    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output50.txt"):
+    with uti.redirect_stdout_to_file(r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\output64.txt"):
         main()

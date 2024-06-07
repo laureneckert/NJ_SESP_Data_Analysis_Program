@@ -35,6 +35,8 @@ config = {
         'pickle_directory': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Data\pickles",
         'outages_by_year_plot_directory': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\outages visualizations\by year",
         'outages_by_storm_system_plot_directory': r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\outages visualizations\by storm",    
+        'outages_by_event_plot_directory' : r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\outages visualizations\by event",
+        'freq_coef_by_hazard_plot_directory' : r"C:\Users\laure\Dropbox\School\BSE\Coursework\23 Fall\JuniorClinic\risk assessment\NJSESP_Data_Analysis\Terminal output\by hazard"
     },
     'pickle_paths': {
         #data sources - noaa

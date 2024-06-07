@@ -6,8 +6,13 @@ from abc import ABC, abstractmethod
 from FEMA_NRI_data import FEMA_NRI_data
 from hazard import Hazard
 import utilities as uti
+from njsesp_config import config
 import os
 import pandas as pd
+import numpy as np
+from scipy.stats import linregress
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 class NaturalHazard(Hazard):
     def __init__(self, type_of_hazard):
@@ -56,6 +61,8 @@ class NaturalHazard(Hazard):
         print(f"Total Property Damage: ${self.total_property_damage:,.2f}")
         print(f"Average Time Duration Customers Affected: {self.avg_time_duration_customer_affected} hours")
         print(f"Historical Frequency: {self.historical_frequency}")
+        print(f"Frequency Coefficient: {self.frequency_coefficient}")
+        print(f"Intensity Coefficient: {self.intensity_coefficient}")
         print(f"Future Impact Coefficient: {self.future_impact_coefficient}")
         print(f"---------------------------------")
 
@@ -230,6 +237,84 @@ class NaturalHazard(Hazard):
             filenames_str = ', '.join(filenames)  # Convert the set of filenames to a string
             print(f"Window: {start} to {end}, Source Files: {filenames_str}")
 
+    def plot_zoomed_outages_around_events(hazard, eagle_i_events, ewma_data, seasonal_baseline, cap_value, USGSEvents, after_2014=True):
+        # Check for terminal output directory
+        plot_dir = config['directories']['outages_by_event_plot_directory']
+        if not os.path.exists(plot_dir):
+            os.makedirs(plot_dir)
+
+        # Define the color for event windows
+        event_window_color = 'cyan'
+        above_baseline_color = 'yellow'  # Color for regions where EWMA is above baseline
+
+        # Convert eagle_i_events to DataFrame and group by timestamp
+        df = pd.DataFrame(eagle_i_events)
+        df['run_start_time'] = pd.to_datetime(df['run_start_time'])
+        df_grouped = df.groupby('run_start_time').sum().reset_index()
+
+        # Determine the event windows based on hazard type
+        if hazard.type_of_hazard == "earthquakes":
+            event_windows = [event.usgs_window for event in USGSEvents]
+        else:
+            event_windows = hazard.processed_noaa_windows
+
+        # Filter event windows based on the year, if applicable
+        if after_2014:
+            event_windows = [window for window in event_windows if window[0].year > 2014]
+
+        for window in event_windows:
+            start_window = window[0] - pd.Timedelta(days=1)
+            end_window = window[1] + pd.Timedelta(days=2)
+
+            # Prepare to plot
+            fig, ax = plt.subplots(figsize=(15, 7))
+
+            # Highlight the event window
+            ax.axvspan(window[0], window[1], color=event_window_color, alpha=0.3, label=f'Event Window ({hazard.type_of_hazard})')
+
+            # Filter eagle_i_events within the window and plot
+            filtered_events = df_grouped[(df_grouped['run_start_time'] >= start_window) & (df_grouped['run_start_time'] <= end_window)]
+            ax.plot_date(filtered_events['run_start_time'], filtered_events['sum'], 'b-', label='Eagle I Outages')
+
+            # Filter EWMA and Seasonal Baseline data for the window and plot if available
+            ewma_filtered = ewma_data[(ewma_data.index >= start_window) & (ewma_data.index <= end_window)]
+            baseline_filtered = seasonal_baseline[(seasonal_baseline.index >= start_window) & (seasonal_baseline.index <= end_window)]
+            if not ewma_filtered.empty:
+                ax.plot(ewma_filtered.index, ewma_filtered, 'r-', label='EWMA')
+            if not baseline_filtered.empty:
+                ax.plot(baseline_filtered.index, baseline_filtered, 'g-', label='Seasonal Baseline')
+
+            # Highlight regions above the baseline
+            if hasattr(hazard, 'timestamps_above_baseline'):
+                for above_start, above_end in hazard.timestamps_above_baseline:
+                    if above_start >= start_window and above_end <= end_window:
+                        ax.axvspan(above_start, above_end, color=above_baseline_color, alpha=0.5, label='Above Baseline Period')
+
+            # Plot the EWMA cap value as a horizontal line
+            ax.axhline(y=cap_value, color='magenta', linestyle='--', label='Outlier Cap')
+
+            # Formatting the plot
+            ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+            fig.autofmt_xdate()
+            plt.title(f'Outages around {hazard.type_of_hazard} Event Window', fontsize=16)
+            plt.xlabel('Time', fontsize=14)
+            plt.ylabel('Outage Sum', fontsize=14)
+            plt.legend()
+            plt.tight_layout()
+
+            # Determine the version number for the file and save the plot
+            version = 1
+            formatted_start_date = window[0].strftime('%Y%m%d')
+            filename = f"zoomed_outages_around_{hazard.type_of_hazard}_{formatted_start_date}_v{version}.png"
+            while os.path.exists(os.path.join(plot_dir, filename)):
+                version += 1
+                filename = f"zoomed_outages_around_{hazard.type_of_hazard}_{formatted_start_date}_v{version}.png"
+            
+            fig.savefig(os.path.join(plot_dir, filename))
+            plt.close(fig)
+            print(f"Saved plot for {filename}")
+
     def calculate_duration_above_baseline_for_windows(self, event_windows, ewma_data, seasonal_baseline):
         """
         Calculates the total duration where event data is above the seasonal baseline.
@@ -304,7 +389,8 @@ class NaturalHazard(Hazard):
 
         # Convert total_duration_above from Timedelta to float (hours) for easier handling.
         total_duration_hours = total_duration_above.total_seconds() / 3600
-
+        self.timestamps_above_baseline = timestamps_above
+        
         print(f"Total duration above baseline: {total_duration_hours} hours")
         return total_duration_hours, timestamps_above
 
@@ -313,7 +399,8 @@ class NaturalHazard(Hazard):
         peak_outages_by_county = {}
         total_peak_outages = 0
 
-        start_time, end_time, _ = event_window
+        #start_time, end_time, _ = event_window   #for noaa event windows
+        start_time, end_time = event_window
         print(f"Calculating peak outages for window: {start_time} to {end_time}")
 
         for event in eaglei_events:
@@ -348,7 +435,8 @@ class NaturalHazard(Hazard):
         print(f"Calculating average peak outages for {type_of_hazard} after {threshold_date}...")
 
         # Loop through each processed NOAA event window
-        for window in self.processed_noaa_windows:
+        #for window in self.processed_noaa_windows: @TODO ask ethan if this is ok to change
+        for window in self.timestamps_above_baseline:
             if window[0] > threshold_date:
                 print(f"\nProcessing window {window[0]} to {window[1]}")
                 window_peak_outages = self.calculate_peak_outages_for_window(window, eaglei_events)
@@ -513,9 +601,54 @@ class NaturalHazard(Hazard):
         else:
             print("NRI_data_fields does not exist or is not a dictionary.")
 
-    def calculate_frequency_coefficient():
-        #linear regression of processed noaa window start dates over time
-        pass
+    def calculate_frequency_coefficient(self):
+        # Extract the years from the NOAA events
+        event_years = [pd.to_datetime(event.begin_date).year for event in self.noaa_events]
+
+        # Count the number of events per year
+        unique_years = sorted(set(event_years))
+        event_counts = {year: event_years.count(year) for year in unique_years}
+
+        # Prepare data for linear regression
+        years = np.array(list(event_counts.keys()))
+        frequencies = np.array(list(event_counts.values()))
+
+        # Perform linear regression using scipy
+        slope, intercept, r_value, p_value, std_err = linregress(years, frequencies)
+
+        # Calculate frequency coefficient
+        frequency_coefficient = slope + 1  # Adjust to be within range [0, 2]
+
+        # Plot the annual frequencies and the regression line
+        plt.figure(figsize=(10, 6))
+        plt.scatter(years, frequencies, color='blue', label='Annual Frequencies')
+        plt.plot(years, intercept + slope * years, color='red', linewidth=2, label='Regression Line')
+        plt.title(f'Annual Frequency of {self.type_of_hazard} Events')
+        plt.xlabel('Year')
+        plt.ylabel('Frequency')
+        plt.legend()
+        plt.grid(True)
+
+        # Determine the version number for the file and save the plot
+        plot_dir = config['directories']['freq_coef_by_hazard_plot_directory']
+        if not os.path.exists(plot_dir):
+            os.makedirs(plot_dir)
+
+        version = 1
+        filename = f"frequency_coefficient_{self.type_of_hazard}_v{version}.png"
+        while os.path.exists(os.path.join(plot_dir, filename)):
+            version += 1
+            filename = f"frequency_coefficient_{self.type_of_hazard}_v{version}.png"
+
+        plt.savefig(os.path.join(plot_dir, filename))
+        plt.close()
+        print(f"Saved plot for {filename}")
+
+        # Assign the frequency coefficient to the instance attribute
+        self.frequency_coefficient = frequency_coefficient
+
+        print(f'Frequency Coefficient for {self.type_of_hazard}: {frequency_coefficient}')
+        return frequency_coefficient
 
     def get_years_and_intensities(self):
         #should be implemented in the subclasses
